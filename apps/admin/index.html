@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OverGrid Admin</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header>
+    <h1>OverGrid Admin</h1>
+    <nav>
+      <button id="tab-verify">Verify</button>
+      <button id="tab-envelopes">Envelopes</button>
+      <button id="tab-replay">Replay</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="view-verify">
+      <h2>Bundle Verify</h2>
+      <p>Uses dist_golden_bundle_v1 files. Runs verifier locally on your machine.</p>
+      <button id="btn-verify">Run Verify</button>
+      <pre id="out-verify"></pre>
+    </section>
+
+    <section id="view-envelopes" hidden>
+      <h2>Envelope Builder</h2>
+      <div class="row">
+        <button id="btn-load-envelopes">Load dist_golden_bundle_v1/envelopes.json</button>
+        <button id="btn-export-envelopes">Export edited envelopes.json</button>
+      </div>
+      <textarea id="ta-envelopes" spellcheck="false"></textarea>
+      <pre id="out-envelopes"></pre>
+    </section>
+
+    <section id="view-replay" hidden>
+      <h2>Replay Preview</h2>
+      <div class="row">
+        <button id="btn-load-ledger">Load dist_golden_bundle_v1/ledger.json</button>
+        <label>Tick <input id="tick" type="range" min="0" max="0" value="0" /></label>
+        <span id="tickLabel">0</span>
+      </div>
+      <canvas id="cv" width="900" height="500"></canvas>
+      <pre id="out-replay"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>
