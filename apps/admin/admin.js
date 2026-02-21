@@ -4,6 +4,7 @@ function showTab(name){
   $("tab-verify").style.display = (name==="verify") ? "" : "none";
   $("tab-envelopes").style.display = (name==="envelopes") ? "" : "none";
   $("tab-replay").style.display = (name==="replay") ? "" : "none";
+  $("tab-commands").style.display = (name==="commands") ? "" : "none";
 }
 
 async function jget(url){
@@ -91,6 +92,7 @@ function init(){
   $("btn-verify").onclick = ()=>showTab("verify");
   $("btn-envelopes").onclick = ()=>showTab("envelopes");
   $("btn-replay").onclick = ()=>showTab("replay");
+  $("btn-commands").onclick = ()=>showTab("commands");
 
   $("run-verify").onclick = runVerify;
 
@@ -99,7 +101,44 @@ function init(){
 
   $("reload-env").onclick = loadEnvelopes;
   $("reload-replay").onclick = loadReplay;
+  $("send-cmd").onclick = sendCmd;
 
   showTab("verify");
 }
 document.addEventListener("DOMContentLoaded", init);
+
+
+async function jpost(url, body){
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  return await r.json();
+}
+
+async function sendCmd(){
+  const out = $("out-cmd");
+  out.textContent = "sending...";
+  try{
+    const tick = Number($("tick-cmd").value);
+    const payload = {
+      tick,
+      commands: [{ type:"ATTACK", entityId:"A1", targetId:"B1" }]
+    };
+    const j = await jpost("/api/commit", payload);
+    out.textContent = JSON.stringify(j, null, 2);
+
+    // refresh envelopes + replay immediately
+    $("tick-env").max = String(Math.max(Number($("tick-env").max||0), tick));
+    $("tick-replay").max = String(Math.max(Number($("tick-replay").max||0), tick));
+    $("tick-env").value = String(tick);
+    $("tick-replay").value = String(tick);
+    setTickLabel("env", tick);
+    setTickLabel("replay", tick);
+    await loadEnvelopes();
+    await loadReplay();
+  }catch(e){
+    out.textContent = String(e && e.message ? e.message : e);
+  }
+}
