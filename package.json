@@ -2,11 +2,11 @@
   "name": "overgrid-core",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
   "license": "MIT",
   "description": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "admin:dev": "node scripts/dev_admin_server.cjs",
+    "bundle:verify": "bash scripts/ci_verify_bundle_v1.sh"
   },
   "keywords": [],
   "author": ""
