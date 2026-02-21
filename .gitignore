@@ -1,3 +1,9 @@
 .DS_Store
 *.zip
 *.sha256
+envelopes.tampered.json
+ledger.sig.tampered.json
+ledger.chain.tampered.json
+ledger.tampered.json
+dist_golden_bundle_v1.zip
+dist_golden_bundle_v1.zip.sha256
