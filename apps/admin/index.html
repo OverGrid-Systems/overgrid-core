@@ -1,62 +1,61 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OverGrid Admin</title>
-  <link rel="stylesheet" href="./style.css"/>
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <header class="top">
     <div class="title">OverGrid Admin</div>
     <nav class="tabs">
-      <button id="btn-verify" class="tab">Verify</button>
-      <button id="btn-envelopes" class="tab">Envelopes</button>
-      <button id="btn-replay" class="tab">Replay</button>
+      <button id="btn-verify">Verify</button>
+      <button id="btn-envelopes">Envelopes</button>
+      <button id="btn-replay">Replay</button>
     </nav>
   </header>
 
-  <main class="main">
+  <main class="wrap">
+
     <section id="tab-verify" class="panel">
       <h2>Bundle Verify</h2>
-      <p class="muted">Calls <code>/api/verify</code> then prints stdout/stderr.</p>
-      <button id="run-verify" class="btn">Run Verify</button>
+      <p>Calls /api/verify then prints stdout/stderr.</p>
+      <button id="run-verify">Run Verify</button>
       <pre id="out-verify" class="out"></pre>
     </section>
 
-    <section id="tab-envelopes" class="panel hidden">
+    <section id="tab-envelopes" class="panel" style="display:none">
       <h2>Envelopes</h2>
-      <p class="muted">Reads <code>/api/envelopes</code> and filters by tick.</p>
+      <p>Reads /api/envelopes and filters by tick.</p>
 
       <div class="row">
         <label>Tick:</label>
-        <input id="env-tick" type="range" min="0" max="0" value="0"/>
-        <span id="env-tick-label" class="mono">0</span>
-        <button id="env-reload" class="btn small">Reload</button>
-      </div>
-
-      <div class="row">
-        <div id="env-summary" class="muted mono"></div>
+        <input id="tick-env" type="range" min="0" max="35" value="0" />
+        <span id="tickval-env" class="tickval">0</span>
+        <button id="reload-env">Reload</button>
       </div>
 
       <pre id="out-env" class="out"></pre>
     </section>
 
-    <section id="tab-replay" class="panel hidden">
+    <section id="tab-replay" class="panel" style="display:none">
       <h2>Replay</h2>
-      <p class="muted">Reads <code>/api/ledger</code> and shows proof at tick.</p>
+      <p>Reads /api/ledger and shows proof at tick.</p>
 
       <div class="row">
         <label>Tick:</label>
-        <input id="tick" type="range" min="0" max="0" value="0"/>
-        <span id="tick-label" class="mono">0</span>
-        <button id="replay-reload" class="btn small">Reload</button>
+        <input id="tick-replay" type="range" min="1" max="36" value="1" />
+        <span id="tickval-replay" class="tickval">1</span>
+        <button id="reload-replay">Reload</button>
       </div>
 
       <pre id="out-replay" class="out"></pre>
+      <canvas id="canvas" width="640" height="200" class="canvas"></canvas>
     </section>
+
   </main>
 
-  <script type="module" src="./admin.js"></script>
+  <script src="./admin.js"></script>
 </body>
 </html>
