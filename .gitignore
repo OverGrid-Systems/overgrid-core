@@ -1,0 +1,7 @@
+# secrets
+private.pem
+keys/private.pem
+
+# generated bundles / artifacts
+dist_proof_bundle/
+*.tampered.json
