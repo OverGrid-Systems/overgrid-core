@@ -1,9 +1,75 @@
-body{font-family:system-ui,Arial,sans-serif;margin:0;background:#0b0c10;color:#e6e6e6}
-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #222}
-nav button{margin-right:8px}
-main{padding:16px}
-section{max-width:1100px}
-.row{display:flex;gap:12px;align-items:center;margin:10px 0}
-textarea{width:100%;height:340px;background:#0f1116;color:#d7d7d7;border:1px solid #222;padding:10px;font-family:ui-monospace,Menlo,Monaco,monospace;font-size:12px}
-pre{background:#0f1116;border:1px solid #222;padding:10px;overflow:auto}
-canvas{border:1px solid #222;background:#07080c}
+:root{
+  color-scheme: dark;
+  --bg:#0b0d10;
+  --panel:#0f1318;
+  --line:#1b2430;
+  --text:#e8eef6;
+  --muted:#a9b6c6;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background:var(--bg);
+  color:var(--text);
+}
+.top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 22px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, #0c1015, #0b0d10);
+}
+.title{
+  font-size:40px;
+  font-weight:800;
+  letter-spacing:-0.02em;
+}
+.tabs{display:flex; gap:10px}
+.tab{
+  padding:8px 12px;
+  border:1px solid var(--line);
+  background:#111823;
+  color:var(--text);
+  cursor:pointer;
+  border-radius:6px;
+}
+.tab.active{background:#152033}
+.main{padding:18px 22px}
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:18px;
+}
+.hidden{display:none}
+h2{margin:0 0 8px 0}
+.muted{color:var(--muted)}
+.mono{font-family: ui-monospace, Menlo, Monaco, Consolas, monospace}
+.row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:12px 0;
+}
+.btn{
+  padding:8px 12px;
+  border:1px solid var(--line);
+  background:#182233;
+  color:var(--text);
+  border-radius:6px;
+  cursor:pointer;
+}
+.btn.small{padding:6px 10px; font-size:12px}
+.out{
+  margin:12px 0 0 0;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#0b0f15;
+  min-height:120px;
+  overflow:auto;
+  white-space:pre;
+}
+code{font-family: ui-monospace, Menlo, Monaco, Consolas, monospace}
