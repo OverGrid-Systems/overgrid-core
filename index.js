@@ -1,8 +1,8 @@
-// ===== OverGrid Phase 17 Verification Entry =====
+// ===== OverGrid Phase 17 Verification Entry (No verify.js) =====
 
 import { DeterministicExecutor } from "./executor.js";
 import { DeterministicTimeController } from "./timeController.js";
-import { verifyLedger } from "./verify.js";
+import { verifyLedger } from "./verifyLedger.js";
 import { SCALE } from "./core.js";
 
 /* ===== RNG ===== */
@@ -98,17 +98,20 @@ for (let s = 0; s < RUNS; s++) {
 
   const ledger = executor.getLedger();
   const envelopes = executor.getEnvelopesForVerification();
+  const publicKeyPem = executor.getPublicKey();
 
   const result = verifyLedger({
     initialEntities: initialEntities(),
     envelopes,
-    ledger
+    ledger,
+    publicKeyPem
   });
 
   if (!result.valid) {
     console.error("External verification failed at tick",
                   result.divergenceIndex,
-                  "seed", seed);
+                  "seed", seed,
+                  "| reason:", result.reason);
     process.exit(1);
   }
 
