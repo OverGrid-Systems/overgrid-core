@@ -2,6 +2,9 @@
 
 const fs = require("fs");
 
+
+// DEV_ENVELOPES_PATH override (CI tamper tests + local sandbox)
+const DEV_ENVELOPES_PATH = String(process.env.DEV_ENVELOPES_PATH || "");
 const RULESET_VERSION = "SIM_V1_R2_RANGE800";
 const path = require("path");
 const crypto = require("crypto");
@@ -226,7 +229,7 @@ function main(){
   const merged = readJSON(path.join(ROOT,"dist_golden_bundle_v1/envelopes.json"));
   // dev envelopes optional
   let dev = [];
-  try { dev = readJSON(path.join(ROOT,"dev_state/envelopes.dev.json")); } catch {}
+  try { dev = readJSON(path.join(ROOT,"" + DEV_ENVELOPES_PATH + "")); } catch {}
   const mergedAll = []
     .concat(Array.isArray(merged)?merged:(merged.data||[]))
     .concat(Array.isArray(dev)?dev:(dev.data||[]));
