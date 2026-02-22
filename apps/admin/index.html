@@ -1,62 +1,99 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>OverGrid Admin</title>
-  <link rel="stylesheet" href="./style.css"/>
+  <style>
+    body{margin:0;background:#0b0f14;color:#e7eef7;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
+    header{padding:22px 26px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between}
+    h1{margin:0;font-size:44px;letter-spacing:.3px}
+    .nav button{margin-left:8px;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#e7eef7;cursor:pointer}
+    main{padding:22px 26px}
+    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+    .box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:10px;padding:14px;white-space:pre;overflow:auto;max-width:1100px}
+    .card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:18px;max-width:1150px}
+    .muted{opacity:.75}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.05)}
+    input[type="range"]{width:240px}
+    input[type="number"]{width:90px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:6px;color:#e7eef7;padding:6px 8px}
+  </style>
 </head>
 <body>
-  <header class="top">
-    <div class="title">OverGrid Admin</div>
-    <nav class="tabs">
-      <button id="btn-verify" class="tab">Verify</button>
-      <button id="btn-envelopes" class="tab">Envelopes</button>
-      <button id="btn-replay" class="tab">Replay</button>
-    </nav>
+  <header>
+    <h1>OverGrid Admin</h1>
+    <div class="nav">
+      <button id="btn-verify" type="button">Verify</button>
+      <button id="btn-envelopes" type="button">Envelopes</button>
+      <button id="btn-replay" type="button">Replay</button>
+      <button id="btn-commands" type="button">Commands</button>
+    </div>
   </header>
 
-  <main class="main">
-    <section id="tab-verify" class="panel">
-      <h2>Bundle Verify</h2>
-      <p class="muted">Calls <code>/api/verify</code> then prints stdout/stderr.</p>
-      <button id="run-verify" class="btn">Run Verify</button>
-      <pre id="out-verify" class="out"></pre>
+  <main>
+    <div class="muted" id="boot-status">boot: (loading...)</div>
+
+    <section id="tab-verify" class="card" style="margin-top:14px;display:none">
+      <h2 style="margin:0 0 8px 0">Bundle Verify</h2>
+      <div class="muted">Calls /api/verify then prints stdout/stderr.</div>
+      <div class="row">
+        <button id="run-verify" type="button">Run Verify</button>
+        <span class="pill">chainHash: <span id="verify-chain">(n/a)</span></span>
+      </div>
+      <pre id="out-verify" class="box">(empty)</pre>
     </section>
 
-    <section id="tab-envelopes" class="panel hidden">
-      <h2>Envelopes</h2>
-      <p class="muted">Reads <code>/api/envelopes</code> and filters by tick.</p>
+    <section id="tab-envelopes" class="card" style="margin-top:14px;display:none">
+      <h2 style="margin:0 0 8px 0">Envelopes</h2>
+      <div class="muted">Reads /api/envelopes and filters by tick.</div>
+
+      <div class="row">
+        <span class="pill">range: <span id="env-range">?</span></span>
+        <span class="pill">frames: <span id="env-count">?</span></span>
+      </div>
 
       <div class="row">
         <label>Tick:</label>
-        <input id="env-tick" type="range" min="0" max="0" value="0"/>
-        <span id="env-tick-label" class="mono">0</span>
-        <button id="env-reload" class="btn small">Reload</button>
+        <input id="tick-env" type="range" min="0" max="0" value="0" />
+        <span id="tick-env-label">0</span>
+        <button id="reload-env" type="button">Reload</button>
       </div>
 
-      <div class="row">
-        <div id="env-summary" class="muted mono"></div>
-      </div>
-
-      <pre id="out-env" class="out"></pre>
+      <pre id="out-env" class="box">(empty)</pre>
     </section>
 
-    <section id="tab-replay" class="panel hidden">
-      <h2>Replay</h2>
-      <p class="muted">Reads <code>/api/ledger</code> and shows proof at tick.</p>
+    <section id="tab-replay" class="card" style="margin-top:14px;display:none">
+      <h2 style="margin:0 0 8px 0">Replay</h2>
+      <div class="muted">Reads /api/ledger and shows proof at tick.</div>
+
+      <div class="row">
+        <span class="pill">range: <span id="replay-range">?</span></span>
+        <span class="pill">proofs: <span id="replay-count">?</span></span>
+      </div>
 
       <div class="row">
         <label>Tick:</label>
-        <input id="tick" type="range" min="0" max="0" value="0"/>
-        <span id="tick-label" class="mono">0</span>
-        <button id="replay-reload" class="btn small">Reload</button>
+        <input id="tick-replay" type="range" min="0" max="0" value="0" />
+        <span id="tick-replay-label">0</span>
+        <button id="reload-replay" type="button">Reload</button>
       </div>
 
-      <pre id="out-replay" class="out"></pre>
+      <pre id="out-replay" class="box">(empty)</pre>
+    </section>
+
+    <section id="tab-commands" class="card" style="margin-top:14px;display:none">
+      <h2 style="margin:0 0 8px 0">Commands</h2>
+      <div class="muted">DEV ONLY: POST /api/commit appends an envelope to dev_state/envelopes.dev.json</div>
+      <div class="row">
+        <label>Tick:</label>
+        <input id="cmd-tick" type="number" value="0" min="0" />
+        <button id="send-cmd" type="button">Send Attack (A1 -> B1)</button>
+        <button id="send-cmd2" type="button">Send Attack (B1 -> A1)</button>
+      </div>
+      <pre id="out-cmd" class="box">(empty)</pre>
     </section>
   </main>
 
-  <script type="module" src="./admin.js"></script>
+  <script src="./admin.js?v=DEV_META_V1"></script>
 </body>
 </html>
