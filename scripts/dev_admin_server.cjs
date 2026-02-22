@@ -1,213 +1,219 @@
-/* OverGrid Admin Dev Server (CJS) */
-const http = require("http");
-const url = require("url");
-const fs = require("fs");
-const path = require("path");
-const { spawnSync } = require("child_process");
+/* OverGrid Core — Admin Dev Server (CJS)
+   Serves /apps/admin + JSON APIs from dist_golden_bundle_v1 + dev_state
+*/
+"use strict";
 
-const ROOT = process.cwd();
+const http = require("node:http");
+const fs = require("node:fs");
+const path = require("node:path");
+const { spawnSync } = require("node:child_process");
+
 const PORT = Number(process.env.PORT || 5173);
+const ROOT = process.cwd();
 
-// مصادر البيانات
-const GOLD = path.join(ROOT, "dist_golden_bundle_v1");
-const DEV_STATE = path.join(ROOT, "dev_state");
-const DEV_ENV_PATH = path.join(DEV_STATE, "envelopes.dev.json");
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".pem": "text/plain; charset=utf-8",
+  ".md": "text/plain; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+};
 
-function send(res, code, data, type="application/json"){
-  res.writeHead(code, {
-    "content-type": type,
+function send(res, status, body, contentType = "text/plain; charset=utf-8") {
+  res.writeHead(status, {
+    "content-type": contentType,
     "cache-control": "no-store",
     "access-control-allow-origin": "*",
   });
-  res.end(data);
+  res.end(body);
 }
 
-function sendJSON(res, obj, code=200){
-  send(res, code, JSON.stringify(obj, null, 2), "application/json");
+function sendJSON(res, obj, status = 200) {
+  send(res, status, JSON.stringify(obj, null, 2), "application/json; charset=utf-8");
 }
 
-function readJSON(p){
-  return JSON.parse(fs.readFileSync(p, "utf8"));
+function readJSONSafe(relPath) {
+  const abs = path.join(ROOT, relPath);
+  if (!fs.existsSync(abs)) return null;
+  const t = fs.readFileSync(abs, "utf8");
+  try { return JSON.parse(t); } catch { return null; }
 }
 
-function safeArray(x){
-  if(Array.isArray(x)) return x;
-  if(x && Array.isArray(x.data)) return x.data;
-  if(x && Array.isArray(x.envelopes)) return x.envelopes;
-  if(x && Array.isArray(x.frames)) return x.frames;
-  if(x && Array.isArray(x.ledger)) return x.ledger;
-  if(x && Array.isArray(x.proofs)) return x.proofs;
+function asArray(x) {
+  if (!x) return [];
+  if (Array.isArray(x)) return x;
+  if (Array.isArray(x.data)) return x.data;
+  if (Array.isArray(x.envelopes)) return x.envelopes;
+  if (Array.isArray(x.frames)) return x.frames;
   return [];
 }
 
-function mergeEnvelopes(goldenArr){
-  let devArr = [];
-  try{
-    if(fs.existsSync(DEV_ENV_PATH)) devArr = safeArray(readJSON(DEV_ENV_PATH));
-  }catch{}
-  return [...goldenArr, ...devArr];
+function uniqByTick(arr) {
+  const m = new Map();
+  for (const e of arr) {
+    const t = Number(e && (e.tick ?? e.frameId ?? e.t));
+    if (!Number.isFinite(t)) continue;
+    // dev overrides dist on same tick
+    m.set(t, e);
+  }
+  return [...m.entries()].sort((a,b)=>a[0]-b[0]).map(([,v])=>v);
 }
 
-function computeMeta(){
-  const env = safeArray(readJSON(path.join(GOLD, "envelopes.json")));
-  const led = safeArray(readJSON(path.join(GOLD, "ledger.json")));
-
-  const envTicks = env.map(e=>Number(e.tick ?? e.frameId ?? e.t)).filter(Number.isFinite).sort((a,b)=>a-b);
-  const ledTicks = led.map(p=>Number(p.tick ?? p.t)).filter(Number.isFinite).sort((a,b)=>a-b);
-
-  const envMin = envTicks.length ? envTicks[0] : 0;
-  const envMax = envTicks.length ? envTicks[envTicks.length-1] : 0;
-  const ledMin = ledTicks.length ? ledTicks[0] : 0;
-  const ledMax = ledTicks.length ? ledTicks[ledTicks.length-1] : 0;
-
-  return {
-    ok:true,
-    envelopes:{ count: envTicks.length, minTick: envMin, maxTick: envMax },
-    ledger:{ count: ledTicks.length, minTick: ledMin, maxTick: ledMax },
-  };
+function ensureDevStateFile() {
+  const dir = path.join(ROOT, "dev_state");
+  const f = path.join(dir, "envelopes.dev.json");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(f)) fs.writeFileSync(f, "[]\n");
+  return f;
 }
 
-function handleStatic(req, res, pathname){
-  const adminRoot = path.join(ROOT, "apps", "admin");
-  const p = path.normalize(path.join(adminRoot, pathname.replace(/^\/apps\/admin\/?/, "")));
+function serveStatic(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  let rel = url.pathname;
 
-  if(!p.startsWith(adminRoot)) return send(res, 403, "forbidden", "text/plain");
+  // default
+  if (rel === "/") rel = "/apps/admin/index.html";
 
-  let filePath = p;
-  if(pathname === "/apps/admin" || pathname === "/apps/admin/") filePath = path.join(adminRoot, "index.html");
+  // normalize
+  rel = rel.replace(/^\/+/, "");
+  const abs = path.join(ROOT, rel);
 
-  fs.stat(filePath, (e, st)=>{
-    if(e) return send(res, 404, "not found", "text/plain");
-    if(st.isDirectory()){
-      const idx = path.join(filePath, "index.html");
-      return fs.readFile(idx, (e2, d)=> e2 ? send(res,404,"not found","text/plain") : send(res,200,d,"text/html"));
+  if (!abs.startsWith(ROOT)) return send(res, 403, "forbidden");
+
+  fs.stat(abs, (err, st) => {
+    if (err) return send(res, 404, "not found");
+
+    if (st.isDirectory()) {
+      const idx = path.join(abs, "index.html");
+      fs.readFile(idx, (e, d) => {
+        if (e) return send(res, 404, "not found");
+        send(res, 200, d, MIME[".html"]);
+      });
+      return;
     }
-    const ext = path.extname(filePath).toLowerCase();
-    const mime = {
-      ".html":"text/html",
-      ".js":"application/javascript",
-      ".css":"text/css",
-      ".json":"application/json",
-      ".png":"image/png",
-      ".jpg":"image/jpeg",
-      ".jpeg":"image/jpeg",
-      ".svg":"image/svg+xml",
-      ".txt":"text/plain",
-    };
-    fs.readFile(filePath, (e3, d)=> e3 ? send(res,404,"not found","text/plain") : send(res,200,d,mime[ext] || "application/octet-stream"));
+
+    fs.readFile(abs, (e, d) => {
+      if (e) return send(res, 404, "not found");
+      const ext = path.extname(abs);
+      send(res, 200, d, MIME[ext] || "application/octet-stream");
+    });
   });
 }
 
-const server = http.createServer((req,res)=>{
-  const u = url.parse(req.url, true);
-  const pathname = u.pathname || "/";
+const server = http.createServer((req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const pathname = url.pathname;
 
-  // CORS preflight
-  if(req.method==="OPTIONS"){
-    res.writeHead(204,{
-      "access-control-allow-origin":"*",
-      "access-control-allow-methods":"GET,POST,OPTIONS",
-      "access-control-allow-headers":"content-type",
-      "cache-control":"no-store",
+  // preflight
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, {
+      "access-control-allow-origin": "*",
+      "access-control-allow-methods": "GET,POST,OPTIONS",
+      "access-control-allow-headers": "content-type",
+      "cache-control": "no-store",
     });
     return res.end();
   }
 
-  // صفحات الادمن
-  if(pathname.startsWith("/apps/admin")) return handleStatic(req,res,pathname);
-
   // APIs
-  if(req.method==="GET" && pathname==="/api/meta"){
-    try{ return sendJSON(res, computeMeta()); }
-    catch(e){ return sendJSON(res,{ok:false,error:String(e && e.message ? e.message : e)},500); }
+  if (pathname === "/api/meta") {
+    // META_USES_ENVELOPES_MERGED
+    const envDist = asArray(readMaybeJSON("dist_golden_bundle_v1/envelopes.json"));
+    const envDev  = asArray(readMaybeJSON("dev_state/envelopes.dev.json"));
+    const envMerged = uniqByTick(envDist.concat(envDev));
+    const envTicks = envMerged.map(x=>Number(x.tick)).filter(Number.isFinite);
+    const envMin = envTicks.length ? Math.min(...envTicks) : 0;
+    const envMax = envTicks.length ? Math.max(...envTicks) : 0;
+
+    const led = asArray(readMaybeJSON("dist_golden_bundle_v1/ledger.json"));
+    const ledTicks = led.map(x=>Number(x.tick)).filter(Number.isFinite);
+    const ledMin = ledTicks.length ? Math.min(...ledTicks) : 0;
+    const ledMax = ledTicks.length ? Math.max(...ledTicks) : 0;
+
+    return sendJSON(res, {
+      ok: true,
+      envelopes: { count: envMerged.length, minTick: envMin, maxTick: envMax },
+      ledger:    { count: led.length,      minTick: ledMin, maxTick: ledMax }
+    });
+  },
+      ledger: {
+        count: led.length,
+        minTick: ledTicks.length ? ledTicks[0] : null,
+        maxTick: ledTicks.length ? ledTicks[ledTicks.length - 1] : null,
+      },
+    });
   }
 
-  if(req.method==="GET" && pathname==="/api/initial"){
-    try{
-      const j = readJSON(path.join(GOLD,"initial.json"));
-      return sendJSON(res,{ok:true,data:j});
-    }catch(e){ return sendJSON(res,{ok:false,error:String(e && e.message ? e.message : e)},500); }
+  if (pathname === "/api/envelopes") {
+    const dist = asArray(readJSONSafe("dist_golden_bundle_v1/envelopes.json"));
+    return sendJSON(res, { ok: true, data: dist });
   }
 
-  if(req.method==="GET" && pathname==="/api/envelopes"){
-    try{
-      const golden = safeArray(readJSON(path.join(GOLD,"envelopes.json")));
-      const merged = mergeEnvelopes(golden);
-      return sendJSON(res,{ok:true,data:merged});
-    }catch(e){ return sendJSON(res,{ok:false,error:String(e && e.message ? e.message : e)},500); }
+  if (pathname === "/api/ledger") {
+    const dist = asArray(readJSONSafe("dist_golden_bundle_v1/ledger.json"));
+    return sendJSON(res, { ok: true, data: dist });
   }
 
-  if(req.method==="GET" && pathname==="/api/ledger"){
-    try{
-      const j = readJSON(path.join(GOLD,"ledger.json"));
-      const a = safeArray(j);
-      return sendJSON(res,{ok:true,data:a});
-    }catch(e){ return sendJSON(res,{ok:false,error:String(e && e.message ? e.message : e)},500); }
+  if (pathname === "/api/initial") {
+    const j = readJSONSafe("dist_golden_bundle_v1/initial.json");
+    return sendJSON(res, { ok: true, data: j });
   }
 
-  if(req.method==="POST" && pathname==="/api/commit"){
-    let body="";
-    req.on("data",(c)=> body+=c);
-    req.on("end",()=>{
-      try{
-        const j = body ? JSON.parse(body) : {};
-        const tick = Number(j.tick ?? 0);
-        const commands = Array.isArray(j.commands) ? j.commands : [];
-        const env = { tick, frameId: tick, commands };
+  // dev commit → append to dev_state/envelopes.dev.json
+  if (pathname === "/api/commit" && req.method === "POST") {
+    const f = ensureDevStateFile();
+    let body = "";
+    req.on("data", d => body += d);
+    req.on("end", () => {
+      let payload;
+      try { payload = JSON.parse(body || "{}"); }
+      catch { return sendJSON(res, { ok:false, error:"invalid json" }, 400); }
 
-        if(!fs.existsSync(DEV_STATE)) fs.mkdirSync(DEV_STATE,{recursive:true});
-        let arr = [];
-        try{
-          if(fs.existsSync(DEV_ENV_PATH)) arr = safeArray(readJSON(DEV_ENV_PATH));
-        }catch{}
-        arr.push(env);
-        fs.writeFileSync(DEV_ENV_PATH, JSON.stringify(arr,null,2));
-        return sendJSON(res,{ok:true, appended: env, total: arr.length});
-      }catch(e){
-        return sendJSON(res,{ok:false,error:String(e && e.message ? e.message : e)},400);
-      }
+      const tick = Number(payload.tick);
+      const frameId = Number(payload.frameId ?? payload.tick);
+      const commands = Array.isArray(payload.commands) ? payload.commands : [];
+
+      if (!Number.isFinite(tick) || tick < 0) return sendJSON(res, { ok:false, error:"bad tick" }, 400);
+      if (!Number.isFinite(frameId) || frameId < 0) return sendJSON(res, { ok:false, error:"bad frameId" }, 400);
+      if (!commands.length) return sendJSON(res, { ok:false, error:"no commands" }, 400);
+
+      const cur = asArray(readJSONSafe("dev_state/envelopes.dev.json"));
+      const next = cur.concat([{ tick, frameId, commands }]);
+      fs.writeFileSync(f, JSON.stringify(next, null, 2));
+
+      return sendJSON(res, { ok:true, appended:{ tick, frameId, commands }, total: next.length });
     });
     return;
   }
 
-  if(req.method==="GET" && pathname==="/api/verify"){
-    try{
-      const verifyScript = path.join(ROOT, "verifyLedger.js");
-      const initial = path.join(GOLD, "initial.json");
-      const envelopes = path.join(GOLD, "envelopes.json");
-      const ledger = path.join(GOLD, "ledger.json");
-      const pub = path.join(ROOT, "public.pem");
-
-      const r = spawnSync(process.execPath, [verifyScript, initial, envelopes, ledger, pub], {
-        cwd: ROOT,
-        encoding: "utf8",
-      });
-
-      // حاول استخراج chainHash من stdout إن وجد
-      const out = (r.stdout||"");
-      const m = out.match(/Final\s+ChainHash:\s*([0-9a-fA-F]+)/);
-      const chainHash = m ? m[1] : null;
-
-      return sendJSON(res,{
-        ok: r.status === 0,
-        chainHash,
-        stdout: out,
-        stderr: (r.stderr||""),
-        exitCode: r.status,
-      });
-    }catch(e){
-      return sendJSON(res,{ok:false,error:String(e && e.message ? e.message : e)},500);
-    }
+  // merged envelopes: dist + dev (dev overrides on same tick)
+  if (pathname === "/api/envelopes_merged") {
+    const dist = asArray(readJSONSafe("dist_golden_bundle_v1/envelopes.json"));
+    const dev  = asArray(readJSONSafe("dev_state/envelopes.dev.json"));
+    const merged = uniqByTick(dist.concat(dev));
+    return sendJSON(res, { ok: true, data: merged });
   }
 
-  return send(res, 404, "not found", "text/plain");
+  // verify (runs bundle verify script)
+  if (pathname === "/api/verify") {
+    const r = spawnSync("bash", ["scripts/ci_verify_bundle_v1.sh"], { cwd: ROOT, encoding: "utf8" });
+    const out = (r.stdout || "") + (r.stderr ? "\n" + r.stderr : "");
+    return sendJSON(res, { ok: r.status === 0, exitCode: r.status, output: out });
+  }
+
+  // static
+  return serveStatic(req, res);
 });
 
-server.listen(PORT, ()=>{
+server.listen(PORT, () => {
   console.log(`http://localhost:${PORT}/apps/admin/`);
   console.log(`http://localhost:${PORT}/api/meta`);
   console.log(`http://localhost:${PORT}/api/verify`);
   console.log(`http://localhost:${PORT}/api/envelopes`);
+  console.log(`http://localhost:${PORT}/api/envelopes_merged`);
   console.log(`http://localhost:${PORT}/api/ledger`);
   console.log(`http://localhost:${PORT}/api/initial`);
+  console.log(`http://localhost:${PORT}/api/commit`);
 });
