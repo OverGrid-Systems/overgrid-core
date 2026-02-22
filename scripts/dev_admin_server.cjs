@@ -1,10 +1,24 @@
+/* OverGrid Admin DEV Server (CommonJS) */
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const url = require("url");
+const { spawn } = require("child_process");
 
 const base = process.cwd();
 const port = Number(process.env.PORT || 5173);
+
+// ثابت: مسار الباندل
+const BUNDLE_DIR = path.join(base, "dist_golden_bundle_v1");
+const P = {
+  initial: path.join(BUNDLE_DIR, "initial.json"),
+  envelopes: path.join(BUNDLE_DIR, "envelopes.json"),
+  ledger: path.join(BUNDLE_DIR, "ledger.json"),
+  publicPem: path.join(BUNDLE_DIR, "public.pem"),
+  verifyLedger: path.join(BUNDLE_DIR, "verifyLedger.js"),
+};
+
+// DEV state (للـ Commands tab فقط)
+const DEV_STATE = path.join(base, "dev_state", "envelopes.dev.json");
 
 const mime = {
   ".html": "text/html; charset=utf-8",
@@ -12,140 +26,133 @@ const mime = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".pem": "text/plain; charset=utf-8",
+  ".md": "text/plain; charset=utf-8",
 };
 
-function send(res, code, body, type = "text/plain; charset=utf-8") {
-  res.writeHead(code, {
-    "Content-Type": type,
-    "Cache-Control": "no-store",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  });
-  res.end(body);
+function send(res, code, data, type) {
+  res.writeHead(code, { "Content-Type": type || "text/plain; charset=utf-8" });
+  res.end(data);
 }
 
-function j(res, code, obj) {
+function sendJSON(res, code, obj) {
   send(res, code, JSON.stringify(obj, null, 2), "application/json; charset=utf-8");
 }
 
-function safeJoin(root, rel) {
-  const p = path.join(root, rel);
-  if (!p.startsWith(root)) return null;
+function readJSON(file) {
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+function safeJoinStatic(urlPath) {
+  const u = urlPath.split("?")[0];
+  const rel = (u === "/" ? "apps/admin/index.html" : u.replace(/^\/+/, ""));
+  const p = path.join(base, rel);
+  if (!p.startsWith(base)) return null;
   return p;
 }
 
-function readJSON(p) {
-  return JSON.parse(fs.readFileSync(p, "utf8"));
+function runVerify(cb) {
+  // شغّل verifier مع المسارات الصحيحة
+  const args = [
+    P.verifyLedger,
+    P.initial,
+    P.envelopes,
+    P.ledger,
+    P.publicPem,
+  ];
+
+  const child = spawn(process.execPath, args, {
+    cwd: base,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  let out = "";
+  let err = "";
+  child.stdout.on("data", (d) => (out += d.toString()));
+  child.stderr.on("data", (d) => (err += d.toString()));
+
+  child.on("close", (code) => {
+    // حاول استخراج chainHash من stdout (إذا موجود)
+    const m = out.match(/Final ChainHash:\s*([0-9a-fA-F]+)/);
+    cb({
+      ok: code === 0,
+      chainHash: m ? m[1] : null,
+      stdout: out,
+      stderr: err,
+      exitCode: code,
+    });
+  });
 }
 
-const GOLDEN_DIR = path.join(base, "dist_golden_bundle_v1");
-const GOLDEN = {
-  envelopes: path.join(GOLDEN_DIR, "envelopes.json"),
-  ledger: path.join(GOLDEN_DIR, "ledger.json"),
-  initial: path.join(GOLDEN_DIR, "initial.json"),
-  verify: path.join(GOLDEN_DIR, "verifyLedger.js"),
-};
-
-const DEV_ENV = path.join(base, "dev_state", "envelopes.dev.json");
-
-function readDevEnvs() {
-  try { return JSON.parse(fs.readFileSync(DEV_ENV, "utf8")); }
-  catch { return []; }
-}
-function writeDevEnvs(a) {
-  fs.mkdirSync(path.dirname(DEV_ENV), { recursive: true });
-  fs.writeFileSync(DEV_ENV, JSON.stringify(a, null, 2));
+function ensureDevState() {
+  const dir = path.dirname(DEV_STATE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(DEV_STATE)) fs.writeFileSync(DEV_STATE, "[]", "utf8");
 }
 
-function normalizeEnvelopes(j) {
-  if (Array.isArray(j)) return j;
-  return (j.envelopes || j.frames || j.data || []);
-}
-
-function normalizeLedger(j) {
-  if (Array.isArray(j)) return j;
-  return (j.ledger || j.proofs || j.data || []);
+function appendDevEnvelope(env) {
+  ensureDevState();
+  const arr = JSON.parse(fs.readFileSync(DEV_STATE, "utf8"));
+  arr.push(env);
+  fs.writeFileSync(DEV_STATE, JSON.stringify(arr, null, 2), "utf8");
+  return arr.length;
 }
 
 const server = http.createServer((req, res) => {
-  const u = url.parse(req.url).pathname || "/";
+  const u = req.url.split("?")[0];
 
-  if (req.method === "OPTIONS") return send(res, 200, "ok");
+  // APIs
+  if (u === "/api/verify") {
+    return runVerify((r) => sendJSON(res, 200, r));
+  }
 
-  // --- API ---
-  if (u === "/api/verify" && req.method === "GET") {
+  if (u === "/api/initial") {
+    try { return sendJSON(res, 200, { ok: true, data: readJSON(P.initial) }); }
+    catch (e) { return sendJSON(res, 200, { ok: false, error: String(e.message || e) }); }
+  }
+
+  if (u === "/api/ledger") {
+    try { return sendJSON(res, 200, { ok: true, data: readJSON(P.ledger) }); }
+    catch (e) { return sendJSON(res, 200, { ok: false, error: String(e.message || e) }); }
+  }
+
+  if (u === "/api/envelopes") {
     try {
-      // تشغيل verifier (من الـ golden bundle) عبر node
-      const { spawnSync } = require("child_process");
-      const r = spawnSync(process.execPath, [GOLDEN.verify], { cwd: GOLDEN_DIR, encoding: "utf8" });
-      const stdout = r.stdout || "";
-      const stderr = r.stderr || "";
-      const m = stdout.match(/Final ChainHash:\s*([0-9a-f]{64})/i);
-      return j(res, 200, { ok: r.status === 0, chainHash: m ? m[1] : null, stdout, stderr });
+      // envelopes.json في الباندل أحياناً Array وأحياناً Object
+      const j = readJSON(P.envelopes);
+      const a = Array.isArray(j) ? j : (j.envelopes || j.frames || []);
+      return sendJSON(res, 200, { ok: true, data: a });
     } catch (e) {
-      return j(res, 500, { ok: false, error: String(e && e.message ? e.message : e) });
+      return sendJSON(res, 200, { ok: false, error: String(e.message || e) });
     }
   }
 
-  if (u === "/api/ledger" && req.method === "GET") {
-    try {
-      const a = normalizeLedger(readJSON(GOLDEN.ledger));
-      return j(res, 200, { ok: true, data: a });
-    } catch (e) {
-      return j(res, 500, { ok: false, error: String(e && e.message ? e.message : e) });
-    }
-  }
-
-  if (u === "/api/initial" && req.method === "GET") {
-    try {
-      return j(res, 200, { ok: true, data: readJSON(GOLDEN.initial) });
-    } catch (e) {
-      return j(res, 500, { ok: false, error: String(e && e.message ? e.message : e) });
-    }
-  }
-
-  if (u === "/api/envelopes" && req.method === "GET") {
-    try {
-      const g = normalizeEnvelopes(readJSON(GOLDEN.envelopes));
-      const d = readDevEnvs();
-      return j(res, 200, { ok: true, data: g.concat(d) });
-    } catch (e) {
-      return j(res, 500, { ok: false, error: String(e && e.message ? e.message : e) });
-    }
-  }
-
+  // DEV commit (Commands tab)
   if (u === "/api/commit" && req.method === "POST") {
     let body = "";
-    req.on("data", (c) => body += c);
+    req.on("data", (d) => (body += d.toString()));
     req.on("end", () => {
       try {
-        const jbody = JSON.parse(body || "{}");
-        const tick = Number.isFinite(Number(jbody.tick)) ? Number(jbody.tick) : 0;
-        const env = {
-          tick,
-          frameId: tick,
-          commands: Array.isArray(jbody.commands) ? jbody.commands : []
-        };
-        const a = readDevEnvs();
-        a.push(env);
-        writeDevEnvs(a);
-        return j(res, 200, { ok: true, appended: env, total: a.length });
+        const j = JSON.parse(body || "{}");
+        const env = j.envelope;
+        if (!env || typeof env !== "object") {
+          return sendJSON(res, 400, { ok: false, error: "missing envelope" });
+        }
+        const total = appendDevEnvelope(env);
+        return sendJSON(res, 200, { ok: true, appended: env, total });
       } catch (e) {
-        return j(res, 400, { ok: false, error: String(e && e.message ? e.message : e) });
+        return sendJSON(res, 400, { ok: false, error: String(e.message || e) });
       }
     });
     return;
   }
 
-  // --- Static files ---
-  // Serve /apps/admin/ as directory
-  let rel = u === "/" ? "apps/admin/index.html" : u.replace(/^\/+/, "");
-  const p = safeJoin(base, rel);
+  // Static
+  const p = safeJoinStatic(req.url);
   if (!p) return send(res, 403, "forbidden");
 
   fs.stat(p, (stErr, st) => {
     if (stErr) return send(res, 404, "not found");
+
     if (st.isDirectory()) {
       const idx = path.join(p, "index.html");
       return fs.readFile(idx, (e, d) => {
@@ -153,6 +160,7 @@ const server = http.createServer((req, res) => {
         send(res, 200, d, mime[".html"]);
       });
     }
+
     fs.readFile(p, (e, d) => {
       if (e) return send(res, 404, "not found");
       const ext = path.extname(p);
@@ -167,5 +175,4 @@ server.listen(port, () => {
   console.log(`http://localhost:${port}/api/envelopes`);
   console.log(`http://localhost:${port}/api/ledger`);
   console.log(`http://localhost:${port}/api/initial`);
-  console.log(`http://localhost:${port}/api/commit`);
 });
