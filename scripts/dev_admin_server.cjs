@@ -5,14 +5,13 @@ const path = require("path");
 
 const ROOT = process.cwd();
 
-const { spawnSync } = require("child_process");
-
-function getCurrentChainHash(maxTick){
-  const env = Object.assign({}, process.env, { MAX_TICK: String(maxTick) });
-  const r = spawnSync("node", ["core/sim_v1.cjs"], { encoding:"utf8", env });
-  const m = (r.stdout||"").match(/^finalChainHash:\s*([a-f0-9]+)/mi);
-  return m ? m[1].trim() : null;
+function readChainCache(){
+  try{
+    const raw = fs.readFileSync(path.join(ROOT,"dev_state","chain_cache.json"),"utf8");
+    return JSON.parse(raw);
+  }catch{ return null; }
 }
+
 const PORT = Number(process.env.PORT || 5173);
 
 const MIME = {
@@ -193,10 +192,14 @@ const server = http.createServer((req, res) => {
       if (arr.some(e => Number(e.frameId) === frameId))
         return sendJSON(res, { ok:false, error:"duplicate_frameId" }, 400);
 
-      const prevChainHash = getCurrentChainHash(tick - 1);
-      if(!prevChainHash)
-        return sendJSON(res,{ok:false,error:"cannot_compute_chain"},500);
+      const cache = readChainCache();
+      if(!cache || !Number.isFinite(Number(cache.maxTick)) || !cache.finalChainHash)
+        return sendJSON(res,{ok:false,error:"missing_chain_cache"},500);
 
+      if (Number(cache.maxTick) !== (tick - 1))
+        return sendJSON(res,{ok:false,error:"stale_chain_cache", cacheMaxTick: cache.maxTick, need: tick-1},400);
+
+      const prevChainHash = String(cache.finalChainHash);
       const appended = { tick, frameId, prevChainHash, commands };
       arr.push(appended);
       fs.writeFileSync(f, JSON.stringify(arr, null, 2) + "\n", "utf8");

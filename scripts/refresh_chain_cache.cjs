@@ -1,0 +1,43 @@
+/**
+ * Writes dev_state/chain_cache.json = { maxTick, finalChainHash, rulesetVersion, updatedAt }
+ * Uses MAX_TICK env to clamp sim output.
+ */
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
+
+const ROOT = process.cwd();
+const outDir = path.join(ROOT, "dev_state");
+if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+
+const env = Object.assign({}, process.env);
+const r = spawnSync("node", ["core/sim_v1.cjs"], { encoding: "utf8", env });
+const stdout = r.stdout || "";
+const stderr = r.stderr || "";
+
+if (r.status !== 0) {
+  console.error(stderr || stdout);
+  process.exit(r.status || 1);
+}
+
+const mTick = stdout.match(/^maxTick:\s*([0-9]+)/mi);
+const mRule = stdout.match(/^rulesetVersion\s+([A-Za-z0-9_\-\.]+)/mi);
+const mHash = stdout.match(/^finalChainHash:\s*([a-f0-9]+)/mi);
+
+const payload = {
+  maxTick: mTick ? Number(mTick[1]) : null,
+  finalChainHash: mHash ? mHash[1].trim() : null,
+  rulesetVersion: mRule ? mRule[1].trim() : null,
+  updatedAt: new Date().toISOString(),
+};
+
+if (!Number.isFinite(payload.maxTick) || !payload.finalChainHash) {
+  console.error("cannot parse sim output");
+  console.error(stdout);
+  process.exit(2);
+}
+
+const cachePath = path.join(outDir, "chain_cache.json");
+fs.writeFileSync(cachePath, JSON.stringify(payload, null, 2) + "\n", "utf8");
+console.log("OK cache:", cachePath);
+console.log(payload);
