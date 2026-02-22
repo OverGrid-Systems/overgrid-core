@@ -1,115 +1,166 @@
 const $ = (id)=>document.getElementById(id);
 
-function showTab(name){
-  $("tab-verify").style.display    = (name==="verify") ? "" : "none";
-  $("tab-envelopes").style.display = (name==="envelopes") ? "" : "none";
-  $("tab-replay").style.display    = (name==="replay") ? "" : "none";
-  $("tab-commands").style.display  = (name==="commands") ? "" : "none";
+function setTab(name){
+  const tabs = ["verify","envelopes","replay"];
+  for(const t of tabs){
+    $(`tab-${t}`).classList.toggle("hidden", t!==name);
+    $(`btn-${t}`).classList.toggle("active", t===name);
+  }
 }
 
-function setTickLabel(which, v){
-  if(which==="env") $("tick-env-label").textContent = String(v);
-  if(which==="replay") $("tick-replay-label").textContent = String(v);
+async function fetchJSON(url){
+  const r = await fetch(url, { cache: "no-store" });
+  if(!r.ok) throw new Error(`${url} -> ${r.status}`);
+  return await r.json();
 }
 
-async function jget(url){
-  const r = await fetch(url, { cache:"no-store" });
-  return await r.json();
-}
-async function jpost(url, body){
-  const r = await fetch(url, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(body)
-  });
-  return await r.json();
+function pretty(obj){
+  return JSON.stringify(obj, null, 2);
 }
 
 async function runVerify(){
   const out = $("out-verify");
   out.textContent = "running...";
-  const j = await jget("/api/verify");
-  out.textContent = JSON.stringify(j, null, 2);
+  try{
+    const j = await fetchJSON("/api/verify");
+    out.textContent =
+`ok=${j.ok}
+chainHash=${j.chainHash || ""}
+
+stdout:
+${j.stdout || ""}
+
+stderr:
+${j.stderr || ""}`.trim();
+  }catch(e){
+    out.textContent = String(e && e.message ? e.message : e);
+  }
+}
+
+let ENVS = [];
+let ENV_TICKS = [];
+
+function normalizeEnvelopes(raw){
+  const arr = Array.isArray(raw) ? raw : (raw.envelopes || raw.frames || []);
+  return arr.map((e, idx)=>{
+    const tick =
+      e.tick ?? e.frameId ?? e.t ?? e.frame?.tick ?? e.frame?.frameId ?? idx;
+    const commands =
+      e.commands ?? e.cmds ?? e.frame?.commands ?? e.frame?.cmds ?? null;
+    return { tick: Number(tick), raw: e, commands };
+  }).sort((a,b)=>a.tick-b.tick);
+}
+
+function envMaxTick(){
+  return ENV_TICKS.length ? ENV_TICKS[ENV_TICKS.length-1] : 0;
+}
+
+function renderEnvelopeTick(t){
+  const out = $("out-env");
+  $("env-tick-label").textContent = String(t);
+
+  const list = ENVS.filter(x=>x.tick===t);
+  $("env-summary").textContent =
+    `envelopes=${ENVS.length} | ticks=${ENV_TICKS.length} | showingTick=${t} | framesHere=${list.length}`;
+
+  if(list.length===0){
+    out.textContent = "(no envelope at this tick)";
+    return;
+  }
+
+  const payload = list.map(x=>{
+    if(x.commands) return { tick: x.tick, commands: x.commands };
+    return { tick: x.tick, raw: x.raw };
+  });
+
+  out.textContent = pretty(payload);
 }
 
 async function loadEnvelopes(){
-  const out = $("out-env");
-  out.textContent = "loading...";
-  const tick = Number($("tick-env").value);
-  setTickLabel("env", tick);
+  $("out-env").textContent = "loading...";
+  try{
+    const raw = await fetchJSON("/api/envelopes");
+    ENVS = normalizeEnvelopes(raw);
+    ENV_TICKS = [...new Set(ENVS.map(x=>x.tick))];
 
-  const j = await jget("/api/envelopes");
-  if(!j.ok) return out.textContent = JSON.stringify(j, null, 2);
+    const slider = $("env-tick");
+    slider.min = "0";
+    slider.max = String(envMaxTick());
+    slider.value = "0";
 
-  const a = Array.isArray(j.data) ? j.data : [];
-  // auto max
-  const ticks = a.map(x=>Number(x.tick ?? x.frameId ?? x.t)).filter(Number.isFinite);
-  if(ticks.length){
-    const max = Math.max(...ticks);
-    $("tick-env").max = String(max);
+    renderEnvelopeTick(0);
+  }catch(e){
+    $("out-env").textContent = String(e && e.message ? e.message : e);
   }
-
-  const here = a.filter(x => Number(x.tick ?? x.frameId ?? x.t) === tick);
-  out.textContent = JSON.stringify(here.length ? here : { note:"(no envelope at this tick)", tick }, null, 2);
 }
 
-async function loadReplay(){
+let LEDGER = [];
+
+function normalizeLedger(raw){
+  const arr = Array.isArray(raw) ? raw : (raw.ledger || raw.proofs || []);
+  return arr.map((p, idx)=>{
+    const tick = p.tick ?? p.i ?? idx;
+    return { tick: Number(tick), raw: p };
+  }).sort((a,b)=>a.tick-b.tick);
+}
+
+function ledgerMaxTick(){
+  return LEDGER.length ? LEDGER[LEDGER.length-1].tick : 0;
+}
+
+function renderTick(i){
   const out = $("out-replay");
-  out.textContent = "loading...";
-  const tick = Number($("tick-replay").value);
-  setTickLabel("replay", tick);
+  $("tick-label").textContent = String(i);
 
-  const j = await jget("/api/ledger");
-  if(!j.ok) return out.textContent = JSON.stringify(j, null, 2);
-
-  const a = Array.isArray(j.data) ? j.data : [];
-  // auto max
-  const ticks = a.map(x=>Number(x.tick ?? x.t)).filter(Number.isFinite);
-  if(ticks.length){
-    const max = Math.max(...ticks);
-    $("tick-replay").max = String(max);
-    $("tick-replay").min = String(Math.min(...ticks));
+  const p = LEDGER.find(x=>x.tick===i);
+  if(!p){
+    out.textContent = "(no proof at this tick)";
+    return;
   }
 
-  const p = a.find(x => Number(x.tick ?? x.t) === tick);
-  out.textContent = JSON.stringify(p ? p : { note:"(no proof at this tick)", tick }, null, 2);
+  const r = p.raw;
+  out.textContent =
+`tick=${r.tick}
+phase=${r.phase}
+stateHash=${r.stateHash}
+chainHash=${r.chainHash}
+signature=${(r.signature||"").slice(0,64)}...
+
+raw:
+${pretty(r)}`;
 }
 
-async function sendCmd(){
-  const out = $("out-cmd");
-  out.textContent = "sending...";
-  const tick = Number($("tick-cmd").value);
+async function loadLedger(){
+  $("out-replay").textContent = "loading...";
+  try{
+    const raw = await fetchJSON("/api/ledger");
+    LEDGER = normalizeLedger(raw);
 
-  const payload = {
-    tick,
-    commands: [{ type:"ATTACK", entityId:"A1", targetId:"B1" }]
-  };
-  const j = await jpost("/api/commit", payload);
-  out.textContent = JSON.stringify(j, null, 2);
+    const slider = $("tick");
+    slider.min = "0";
+    slider.max = String(ledgerMaxTick());
+    slider.value = "0";
 
-  // jump sliders to tick and refresh
-  $("tick-env").value = String(tick);
-  $("tick-replay").value = String(tick);
-  await loadEnvelopes();
-  await loadReplay();
+    renderTick(0);
+  }catch(e){
+    $("out-replay").textContent = String(e && e.message ? e.message : e);
+  }
 }
 
 function init(){
-  $("btn-verify").onclick = ()=>showTab("verify");
-  $("btn-envelopes").onclick = ()=>{ showTab("envelopes"); loadEnvelopes(); };
-  $("btn-replay").onclick = ()=>{ showTab("replay"); loadReplay(); };
-  $("btn-commands").onclick = ()=>showTab("commands");
+  $("btn-verify").onclick = ()=>setTab("verify");
+  $("btn-envelopes").onclick = ()=>{ setTab("envelopes"); loadEnvelopes(); };
+  $("btn-replay").onclick = ()=>{ setTab("replay"); loadLedger(); };
 
   $("run-verify").onclick = runVerify;
 
-  $("tick-env").oninput = loadEnvelopes;
-  $("tick-replay").oninput = loadReplay;
+  $("env-tick").oninput = (e)=>renderEnvelopeTick(Number(e.target.value));
+  $("env-reload").onclick = loadEnvelopes;
 
-  $("reload-env").onclick = loadEnvelopes;
-  $("reload-replay").onclick = loadReplay;
+  $("tick").oninput = (e)=>renderTick(Number(e.target.value));
+  $("replay-reload").onclick = loadLedger;
 
-  $("send-cmd").onclick = sendCmd;
-
-  showTab("verify");
+  setTab("verify");
 }
+
 document.addEventListener("DOMContentLoaded", init);
