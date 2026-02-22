@@ -292,3 +292,95 @@ async function init(){
   renderReplay();
 }
 document.addEventListener("DOMContentLoaded", ()=>{ init().catch(e=>{ safeSet("boot-status","boot: error"); console.error(e); }); });
+
+
+/*__OG_ADMIN_OVERRIDE_V1__*/
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function safeSet(id, txt){ const el=$(id); if(el) el.textContent=txt; }
+  function asArr(j){ return Array.isArray(j) ? j : (j && Array.isArray(j.data) ? j.data : []); }
+
+  async function jsonGET(url){
+    const r = await fetch(url,{cache:"no-store"});
+    const t = await r.text();
+    let j;
+    try{ j = JSON.parse(t); }catch(e){ throw new Error("BAD_JSON "+url+" :: "+t.slice(0,200)); }
+    return j;
+  }
+
+  async function renderEnvelopesOverride(){
+    const out = $("out-env") || $("out-envelopes");
+    if(out) out.textContent="(loading...)";
+    const tickEl = $("tick-env");
+    const t = tickEl ? Number(tickEl.value||0) : 0;
+
+    const j = await jsonGET("/api/envelopes_merged");
+    const env = asArr(j);
+    const rows = env.filter(x=>Number(x.tick)===t);
+    if(out) out.textContent = rows.length ? JSON.stringify(rows.length===1?rows[0]:rows,null,2) : "(empty)";
+  }
+
+  async function renderReplayOverride(){
+    const out = $("out-replay");
+    if(out) out.textContent="(loading...)";
+    const tickEl = $("tick-replay");
+    const t = tickEl ? Number(tickEl.value||0) : 0;
+
+    const j = await jsonGET("/api/ledger");
+    const led = asArr(j);
+    const row = led.find(x=>Number(x.tick)===t) || null;
+    if(out) out.textContent = row ? JSON.stringify(row,null,2) : "(empty)";
+  }
+
+  async function sendCmdOverride(payload){
+    const out = $("out-cmd");
+    if(out) out.textContent="(sending...)";
+    const r = await fetch("/api/commit",{
+      method:"POST",
+      headers:{ "content-type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+    const t = await r.text();
+    if(out) out.textContent = "HTTP " + r.status + "\n" + t;
+
+    // بعد الإرسال: حدّث envelopes مباشرة على نفس tick
+    try{ await renderEnvelopesOverride(); }catch(_){}
+  }
+
+  function bind(){
+    // إظهار الخطأ داخل boot-status لو موجود
+    window.addEventListener("error",(e)=>{
+      const m = e?.error?.stack || e?.message || String(e);
+      safeSet("boot-status","boot: error | "+m);
+    });
+    window.addEventListener("unhandledrejection",(e)=>{
+      const m = e?.reason?.stack || String(e?.reason);
+      safeSet("boot-status","boot: reject | "+m);
+    });
+
+    // اربط الأزرار بالسلوك الجديد (بدون الاعتماد على القديم)
+    const rEnv = $("reload-env"); if(rEnv) rEnv.onclick = ()=>renderEnvelopesOverride().catch(()=>{});
+    const rRep = $("reload-replay"); if(rRep) rRep.onclick = ()=>renderReplayOverride().catch(()=>{});
+
+    const tickEnv = $("tick-env"); if(tickEnv) tickEnv.oninput = ()=>renderEnvelopesOverride().catch(()=>{});
+    const tickRep = $("tick-replay"); if(tickRep) tickRep.oninput = ()=>renderReplayOverride().catch(()=>{});
+
+    const b1 = $("send-cmd");
+    if(b1) b1.onclick = ()=>{
+      const t = Number(($("cmd-tick")?.value)||0);
+      sendCmdOverride({ tick:t, frameId:t, commands:[{ type:"ATTACK", entityId:"A1", targetId:"B1" }] }).catch(()=>{});
+    };
+
+    const b2 = $("send-cmd2");
+    if(b2) b2.onclick = ()=>{
+      const t = Number(($("cmd-tick")?.value)||0);
+      sendCmdOverride({ tick:t, frameId:t, commands:[{ type:"ATTACK", entityId:"B1", targetId:"A1" }] }).catch(()=>{});
+    };
+
+    // أول رسم
+    renderEnvelopesOverride().catch(()=>{});
+    renderReplayOverride().catch(()=>{});
+  }
+
+  document.addEventListener("DOMContentLoaded", bind);
+})();
