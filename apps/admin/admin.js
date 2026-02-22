@@ -1,3 +1,21 @@
+
+// === BOOT ERROR TRAP ===
+window.__BOOT_ERR_TRAP__ = true;
+function __bootSet(msg){
+  const el = document.getElementById("boot-status");
+  if(el) el.textContent = msg;
+}
+window.addEventListener("error", (e)=>{
+  const m = e && e.error && e.error.stack ? e.error.stack : (e && e.message ? e.message : String(e));
+  __bootSet("boot: error | " + m);
+});
+window.addEventListener("unhandledrejection", (e)=>{
+  const r = e && e.reason;
+  const m = r && r.stack ? r.stack : String(r);
+  __bootSet("boot: reject | " + m);
+});
+// === /BOOT ERROR TRAP ===
+
 /* OverGrid Admin v0 — minimal deterministic view (DEV)
    - Loads: /api/initial, /api/envelopes_merged_merged, /api/ledger, /api/meta
    - Builds a simple deterministic state timeline:
