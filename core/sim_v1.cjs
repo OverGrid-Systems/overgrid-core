@@ -92,8 +92,12 @@ function validateMove(state, cmd){
 
 function applyMove(state, cmd){
   const u = state.units.get(String(cmd.entityId));
-  u.x = Number(cmd.x);
-  u.y = Number(cmd.y);
+  if(!u) return;
+  const x = Number(cmd.x), y = Number(cmd.y);
+  if(!Number.isFinite(x) || !Number.isFinite(y)) return;
+  // set target only (no teleport)
+  u.tx = x|0;
+  u.ty = y|0;
 }
 
 function validateCommand(state, cmd, tick){
@@ -145,6 +149,33 @@ function simulate(initialArr, envelopes, maxTick){
   let chainHash = "0".repeat(64);
 
   for(let tick=0; tick<=maxTick; tick++){
+    /*__DET_MOVE_STEP__*/
+    // deterministic movement step (integers only)
+    for(const u of state.units.values()){
+      if(!u || u.hp<=0) continue;
+      const tx = (u.tx|0), ty = (u.ty|0);
+      let dx = (tx - (u.x|0));
+      let dy = (ty - (u.y|0));
+      if(dx===0 && dy===0) continue;
+      // use squared dist compare to avoid float sqrt when possible
+      const dist2 = dx*dx + dy*dy;
+      if(dist2===0){ u.x = tx; u.y = ty; continue; }
+      const speed = (u.speed|0);
+      // if within speed in Manhattan-safe bound, snap
+      if(Math.abs(dx) <= speed && Math.abs(dy) <= speed){
+        // approximate snap using Euclidean check with integer sqrt avoidance:
+        // if dist2 <= speed^2 snap; else move proportionally
+        if(dist2 <= speed*speed){ u.x = tx; u.y = ty; continue; }
+      }
+      // proportional step (uses float but rounded to int deterministically)
+      const dist = Math.sqrt(dist2);
+      const step = Math.min(speed, dist);
+      const nx = (u.x|0) + Math.round(dx/dist * step);
+      const ny = (u.y|0) + Math.round(dy/dist * step);
+      u.x = nx|0;
+      u.y = ny|0;
+    }
+
     const envsRaw = byTick.get(tick) || [];
     const envs = canonicalEnvelopeSort(envsRaw);
 
@@ -171,7 +202,7 @@ function simulate(initialArr, envelopes, maxTick){
       units: [...state.units.values()].map(u=>({
         id:u.id, team:u.team, x:u.x, y:u.y, hp:u.hp,
         lastAttackTick:u.lastAttackTick
-      })).sort((a,b)=>a.id.localeCompare(b.id)),
+      , tx: (u.x|0), ty: (u.y|0), speed: (u.speed||600)|0 })).sort((a,b)=>a.id.localeCompare(b.id)),
       accepted,
       rejected
     };
