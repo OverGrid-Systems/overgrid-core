@@ -1,5 +1,21 @@
 # RTS Command Spec v0 (authoritative)
 
+
+## RULEGATE_CONTRACT_V0 (non-negotiable)
+
+RuleGate enforces two invariants:
+1) Reject unknown fields (strict command shape). Any new field requires updating:
+   - core/spec/rts_command_spec_v0.md
+   - core/spec/rts_command_types_v0.json (if new command type)
+   - core/sim_rts_v0.cjs RuleGate validator/canonicalizer
+2) Canonicalize fields that affect hashing:
+   - unitIds MUST be canonicalized deterministically (stable order) before hashing.
+   - numeric fields MUST be parsed/canonicalized consistently (string -> u64).
+
+Authoritative command types source of truth:
+- core/spec/rts_command_types_v0.json
+
+
 This spec defines the only allowed command payloads for sim_rts_v0 and any future RTS sims.
 All numbers are encoded as base-10 strings in JSON and parsed into deterministic integers.
 Unknown fields are rejected. Missing required fields are rejected.

@@ -12,4 +12,6 @@ npm run docs:check
 bash scripts/ci_verify_bundle_v1.sh
 bash scripts/ci_verify_rts_bundle_v0.sh
 
+bash scripts/ci_rulegate_contract_v0.sh
+
 echo "OK_CI_ALL"

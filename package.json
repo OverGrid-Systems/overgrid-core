@@ -11,7 +11,8 @@
     "docs:check": "node scripts/gen_docs.cjs && git diff --exit-code docs/CURRENT_SYSTEM_STATE.md docs/ARCHITECTURE_MAP.md",
     "rts:sim": "node core/sim_rts_v0.cjs",
     "ci:all": "bash scripts/ci_all.sh",
-    "ci:verify:rts_v0": "bash scripts/ci_verify_rts_bundle_v0.sh"
+    "ci:verify:rts_v0": "bash scripts/ci_verify_rts_bundle_v0.sh",
+    "ci:rulegate:v0": "bash scripts/ci_rulegate_contract_v0.sh"
   },
   "keywords": [],
   "author": ""

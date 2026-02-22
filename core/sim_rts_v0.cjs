@@ -14,6 +14,12 @@ notes:
 - This is a new ruleset file; sim_v1 remains untouched
 @end */
 
+/* RULEGATE_CONTRACT_V0
+- reject unknown fields (strict command shape)
+- canonicalize unitIds + numeric parsing before hashing
+- command types source: core/spec/rts_command_types_v0.json
+*/
+
 const fs = require("fs");
 const crypto = require("crypto");
 
