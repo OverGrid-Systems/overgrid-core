@@ -31,6 +31,18 @@ CI:
 - `.github/workflows/ci_bundle_v1.yml`
 
 ## Quick verify (recommended)
+
+
+## Repo Surface
+
+- Golden canonical artifact: `dist_golden_bundle_v1/`
+- Deterministic simulation core: `core/sim_v1.cjs`
+- Dev authority server: `scripts/dev_admin_server.cjs`
+- CI verification: `scripts/ci_verify_bundle_v1.sh`, `scripts/ci_tamper_test.sh`
+- Local dev state (not tracked): `dev_state/`
+
+See: `docs/REPO_SURFACE.md` and `docs/DEV_VS_GOLDEN.md`.
+
 From repo root:
 ```bash
 cd dist_golden_bundle_v1

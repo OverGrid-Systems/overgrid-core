@@ -1,4 +1,15 @@
 /* OverGrid admin dev server (CJS) — stable, no patching */
+/* @DOC
+title: Dev Authority Server (/api/commit)
+inputs:
+- POST /api/commit {tick, frameId, commands[]}
+outputs:
+- dev_state/envelopes.dev.json append-only (local)
+guarantees:
+- rejects non-monotonic tick
+- rejects duplicate frameId
+- prevChainHash continuity enforced via chain cache
+@end */
 const http = require("http");
 const fs = require("fs");
 const path = require("path");

@@ -3,6 +3,20 @@
 const fs = require("fs");
 
 
+ /* @DOC
+title: Deterministic Simulation Core (sim_v1)
+inputs:
+- dist_golden_bundle_v1/envelopes.json
+- dev_state/envelopes.dev.json (local, optional via DEV_ENVELOPES_PATH)
+outputs:
+- per-tick stateHash + chainHash (internal)
+guarantees:
+- deterministic replay
+- detects envelope tamper via prevChainHash mismatch
+notes:
+- DEV_ENVELOPES_PATH overrides envelope source for tests
+@end */
+
 // DEV_ENVELOPES_PATH override (CI tamper tests + local sandbox)
 const DEV_ENVELOPES_PATH = String(process.env.DEV_ENVELOPES_PATH || "");
 const RULESET_VERSION = "SIM_V1_R2_RANGE800";

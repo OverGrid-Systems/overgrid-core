@@ -13,3 +13,9 @@ dist_golden_bundle_v1.zip.sha256
 
 # local dev state
 /dev_state/
+
+# local git hooks
+.githooks/
+
+# local git hooks
+.githooks/

@@ -6,7 +6,9 @@
   "description": "",
   "scripts": {
     "admin:dev": "node scripts/dev_admin_server.cjs",
-    "bundle:verify": "bash scripts/ci_verify_bundle_v1.sh"
+    "bundle:verify": "bash scripts/ci_verify_bundle_v1.sh",
+    "docs:gen": "node scripts/gen_docs.cjs",
+    "docs:check": "node scripts/gen_docs.cjs && git diff --exit-code docs/CURRENT_SYSTEM_STATE.md docs/ARCHITECTURE_MAP.md"
   },
   "keywords": [],
   "author": ""
