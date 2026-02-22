@@ -7,3 +7,6 @@ ledger.chain.tampered.json
 ledger.tampered.json
 dist_golden_bundle_v1.zip
 dist_golden_bundle_v1.zip.sha256
+
+# local dev state
+/dev_state/chain_cache.json
