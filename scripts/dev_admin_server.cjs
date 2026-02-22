@@ -1,15 +1,11 @@
-/* OverGrid Core — Admin Dev Server (CJS)
-   Serves /apps/admin + JSON APIs from dist_golden_bundle_v1 + dev_state
-*/
-"use strict";
+/* OverGrid admin dev server (CJS) — stable, no patching */
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
 
-const http = require("node:http");
-const fs = require("node:fs");
-const path = require("node:path");
-const { spawnSync } = require("node:child_process");
-
-const PORT = Number(process.env.PORT || 5173);
 const ROOT = process.cwd();
+const PORT = Number(process.env.PORT || 5173);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -34,11 +30,13 @@ function sendJSON(res, obj, status = 200) {
   send(res, status, JSON.stringify(obj, null, 2), "application/json; charset=utf-8");
 }
 
-function readJSONSafe(relPath) {
-  const abs = path.join(ROOT, relPath);
-  if (!fs.existsSync(abs)) return null;
-  const t = fs.readFileSync(abs, "utf8");
-  try { return JSON.parse(t); } catch { return null; }
+function readJSONSafe(rel) {
+  const abs = path.join(ROOT, rel);
+  return JSON.parse(fs.readFileSync(abs, "utf8"));
+}
+
+function readMaybeJSON(rel) {
+  try { return readJSONSafe(rel); } catch { return null; }
 }
 
 function asArray(x) {
@@ -52,48 +50,39 @@ function asArray(x) {
 
 function uniqByTick(arr) {
   const m = new Map();
-  for (const e of arr) {
-    const t = Number(e && (e.tick ?? e.frameId ?? e.t));
+  for (const it of arr) {
+    const t = Number(it && it.tick);
     if (!Number.isFinite(t)) continue;
-    // dev overrides dist on same tick
-    m.set(t, e);
+    m.set(t, it); // last wins (dev overrides dist)
   }
-  return [...m.entries()].sort((a,b)=>a[0]-b[0]).map(([,v])=>v);
+  return [...m.entries()].sort((a,b)=>a[0]-b[0]).map(e=>e[1]);
 }
 
 function ensureDevStateFile() {
   const dir = path.join(ROOT, "dev_state");
-  const f = path.join(dir, "envelopes.dev.json");
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(f)) fs.writeFileSync(f, "[]\n");
+  const f = path.join(dir, "envelopes.dev.json");
+  if (!fs.existsSync(f)) fs.writeFileSync(f, "[]\n", "utf8");
   return f;
 }
 
 function serveStatic(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   let rel = url.pathname;
-
-  // default
   if (rel === "/") rel = "/apps/admin/index.html";
-
-  // normalize
   rel = rel.replace(/^\/+/, "");
   const abs = path.join(ROOT, rel);
 
   if (!abs.startsWith(ROOT)) return send(res, 403, "forbidden");
-
-  fs.stat(abs, (err, st) => {
-    if (err) return send(res, 404, "not found");
-
+  fs.stat(abs, (stErr, st) => {
+    if (stErr) return send(res, 404, "not found");
     if (st.isDirectory()) {
       const idx = path.join(abs, "index.html");
-      fs.readFile(idx, (e, d) => {
+      return fs.readFile(idx, (e, d) => {
         if (e) return send(res, 404, "not found");
         send(res, 200, d, MIME[".html"]);
       });
-      return;
     }
-
     fs.readFile(abs, (e, d) => {
       if (e) return send(res, 404, "not found");
       const ext = path.extname(abs);
@@ -117,9 +106,8 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  // APIs
+  // meta: dist envelopes + dev envelopes, and dist ledger
   if (pathname === "/api/meta") {
-    // META_USES_ENVELOPES_MERGED
     const envDist = asArray(readMaybeJSON("dist_golden_bundle_v1/envelopes.json"));
     const envDev  = asArray(readMaybeJSON("dev_state/envelopes.dev.json"));
     const envMerged = uniqByTick(envDist.concat(envDev));
@@ -135,20 +123,20 @@ const server = http.createServer((req, res) => {
     return sendJSON(res, {
       ok: true,
       envelopes: { count: envMerged.length, minTick: envMin, maxTick: envMax },
-      ledger:    { count: led.length,      minTick: ledMin, maxTick: ledMax }
-    });
-  },
-      ledger: {
-        count: led.length,
-        minTick: ledTicks.length ? ledTicks[0] : null,
-        maxTick: ledTicks.length ? ledTicks[ledTicks.length - 1] : null,
-      },
+      ledger:    { count: led.length,      minTick: ledMin, maxTick: ledMax },
     });
   }
 
   if (pathname === "/api/envelopes") {
     const dist = asArray(readJSONSafe("dist_golden_bundle_v1/envelopes.json"));
     return sendJSON(res, { ok: true, data: dist });
+  }
+
+  if (pathname === "/api/envelopes_merged") {
+    const dist = asArray(readMaybeJSON("dist_golden_bundle_v1/envelopes.json"));
+    const dev  = asArray(readMaybeJSON("dev_state/envelopes.dev.json"));
+    const merged = uniqByTick(dist.concat(dev));
+    return sendJSON(res, { ok: true, data: merged });
   }
 
   if (pathname === "/api/ledger") {
@@ -161,6 +149,7 @@ const server = http.createServer((req, res) => {
     return sendJSON(res, { ok: true, data: j });
   }
 
+  
   // dev commit → append to dev_state/envelopes.dev.json
   if (pathname === "/api/commit" && req.method === "POST") {
     const f = ensureDevStateFile();
@@ -169,32 +158,42 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       let payload;
       try { payload = JSON.parse(body || "{}"); }
-      catch { return sendJSON(res, { ok:false, error:"invalid json" }, 400); }
+      catch { return sendJSON(res, { ok:false, error:"bad json" }, 400); }
 
       const tick = Number(payload.tick);
       const frameId = Number(payload.frameId ?? payload.tick);
       const commands = Array.isArray(payload.commands) ? payload.commands : [];
 
-      if (!Number.isFinite(tick) || tick < 0) return sendJSON(res, { ok:false, error:"bad tick" }, 400);
-      if (!Number.isFinite(frameId) || frameId < 0) return sendJSON(res, { ok:false, error:"bad frameId" }, 400);
-      if (!commands.length) return sendJSON(res, { ok:false, error:"no commands" }, 400);
+      if (!Number.isFinite(tick) || tick < 0)
+        return sendJSON(res, { ok:false, error:"bad tick" }, 400);
 
-      const cur = asArray(readJSONSafe("dev_state/envelopes.dev.json"));
-      const next = cur.concat([{ tick, frameId, commands }]);
-      fs.writeFileSync(f, JSON.stringify(next, null, 2));
+      if (!Number.isFinite(frameId) || frameId < 0)
+        return sendJSON(res, { ok:false, error:"bad frameId" }, 400);
 
-      return sendJSON(res, { ok:true, appended:{ tick, frameId, commands }, total: next.length });
+      if (!commands.length)
+        return sendJSON(res, { ok:false, error:"no commands" }, 400);
+
+      let arr = [];
+      try { arr = JSON.parse(fs.readFileSync(f, "utf8")); } catch {}
+      if (!Array.isArray(arr)) arr = [];
+
+      const lastTick = arr.length ? Number(arr[arr.length-1].tick) : -1;
+
+      if (tick <= lastTick)
+        return sendJSON(res, { ok:false, error:"non_monotonic_tick", lastTick }, 400);
+
+      if (arr.some(e => Number(e.frameId) === frameId))
+        return sendJSON(res, { ok:false, error:"duplicate_frameId" }, 400);
+
+      const appended = { tick, frameId, commands };
+      arr.push(appended);
+      fs.writeFileSync(f, JSON.stringify(arr, null, 2) + "\n", "utf8");
+
+      return sendJSON(res, { ok:true, appended, total: arr.length });
     });
     return;
   }
 
-  // merged envelopes: dist + dev (dev overrides on same tick)
-  if (pathname === "/api/envelopes_merged") {
-    const dist = asArray(readJSONSafe("dist_golden_bundle_v1/envelopes.json"));
-    const dev  = asArray(readJSONSafe("dev_state/envelopes.dev.json"));
-    const merged = uniqByTick(dist.concat(dev));
-    return sendJSON(res, { ok: true, data: merged });
-  }
 
   // verify (runs bundle verify script)
   if (pathname === "/api/verify") {
