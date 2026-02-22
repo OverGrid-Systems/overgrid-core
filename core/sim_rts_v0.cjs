@@ -21,6 +21,7 @@ notes:
 */
 
 const fs = require("fs");
+const RTS_CMD_TYPES_V0 = require("./spec/rts_command_types_v0.json");
 const crypto = require("crypto");
 
 // ==========================
@@ -578,6 +579,7 @@ function canonUnitIds(arr){
 }
 
 function validateAndCanonCommand(cmd){
+  if (!RTS_CMD_TYPES_V0.includes(String(cmd && cmd.type))) throw new Error("BAD_CMD_TYPE");
   if(!cmd || typeof cmd !== "object") throw new Error("bad cmd");
   if(cmd.type === "WORKER_GATHER"){
     const need=["type","workerId","nodeId","hqId"];
@@ -604,7 +606,7 @@ function validateAndCanonCommand(cmd){
     cmd.unitIds = canonUnitIds(cmd.unitIds);
     return cmd;
   }
-  throw new Error("unknown cmd type: "+String(cmd.type));
+  throw new Error("UNIMPLEMENTED_CMD_TYPE");
 }
 
 function validateAndCanonFrame(f){
