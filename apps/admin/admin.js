@@ -1,3 +1,5 @@
+function __asArray(x){ return Array.isArray(x) ? x : (x && Array.isArray(x.data) ? x.data : []); }
+
 
 // === BOOT ERROR TRAP ===
 window.__BOOT_ERR_TRAP__ = true;
@@ -17,7 +19,7 @@ window.addEventListener("unhandledrejection", (e)=>{
 // === /BOOT ERROR TRAP ===
 
 /* OverGrid Admin v0 — minimal deterministic view (DEV)
-   - Loads: /api/initial, /api/envelopes_merged_merged, /api/ledger, /api/meta
+   - Loads: /api/initial, /api/envelopes_merged_merged_merged, /api/ledger, /api/meta
    - Builds a simple deterministic state timeline:
      ATTACK => target.hp -= 10 (floor at 0)
    - Renders entities on canvas, shows proof for tick.
@@ -138,7 +140,7 @@ function setTickLabel(prefix, val){
 async function loadAllIfNeeded(){
   if(!CACHE.meta) CACHE.meta = await getJSON("/api/meta");
   if(!CACHE.initial) CACHE.initial = await getJSON("/api/initial");
-  if(!CACHE.envelopes) CACHE.envelopes = await getJSON("/api/envelopes_merged_merged");
+  if(!CACHE.envelopes) CACHE.envelopes = await getJSON("/api/envelopes_merged_merged_merged");
   if(!CACHE.ledger) CACHE.ledger = await getJSON("/api/ledger");
 
   const envelopesArr = Array.isArray(CACHE.envelopes) ? CACHE.envelopes : (CACHE.envelopes.data ?? []);
