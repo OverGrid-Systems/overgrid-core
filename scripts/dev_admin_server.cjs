@@ -193,7 +193,7 @@ const server = http.createServer((req, res) => {
       if (arr.some(e => Number(e.frameId) === frameId))
         return sendJSON(res, { ok:false, error:"duplicate_frameId" }, 400);
 
-      const prevChainHash = getCurrentChainHash(tick-1);
+      const prevChainHash = getCurrentChainHash(tick - 1);
       if(!prevChainHash)
         return sendJSON(res,{ok:false,error:"cannot_compute_chain"},500);
 
