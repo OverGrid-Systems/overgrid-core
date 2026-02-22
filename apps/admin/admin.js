@@ -37,7 +37,7 @@ window.addEventListener("unhandledrejection", (e)=>{
 // === /BOOT ERROR TRAP ===
 
 /* OverGrid Admin v0 — minimal deterministic view (DEV)
-   - Loads: /api/initial, /api/envelopes_merged_merged_merged_merged, /api/ledger, /api/meta
+   - Loads: /api/initial, /api/envelopes_merged, /api/ledger, /api/meta
    - Builds a simple deterministic state timeline:
      ATTACK => target.hp -= 10 (floor at 0)
    - Renders entities on canvas, shows proof for tick.
@@ -158,7 +158,7 @@ function setTickLabel(prefix, val){
 async function loadAllIfNeeded(){
   if(!CACHE.meta) CACHE.meta = await getJSON("/api/meta");
   if(!CACHE.initial) CACHE.initial = await getJSON("/api/initial");
-  if(!CACHE.envelopes) CACHE.envelopes = await getJSON("/api/envelopes_merged_merged_merged_merged");
+  if(!CACHE.envelopes) CACHE.envelopes = await getJSON("/api/envelopes_merged");
   if(!CACHE.ledger) CACHE.ledger = await getJSON("/api/ledger");
 
   const envelopesArr = Array.isArray(CACHE.envelopes) ? CACHE.envelopes : (CACHE.envelopes.data ?? []);
@@ -384,3 +384,137 @@ document.addEventListener("DOMContentLoaded", ()=>{ init().catch(e=>{ safeSet("b
 
   document.addEventListener("DOMContentLoaded", bind);
 })();
+
+
+/*__OG_ADMIN_OVERRIDE_V3__*/
+(()=>{
+
+  const $ = (id)=>document.getElementById(id);
+  const setText = (id, v)=>{ const el=$(id); if(el) el.textContent = String(v); };
+
+  async function jget(url){
+    const r = await fetch(url, { cache:"no-store" });
+    const t = await r.text();
+    let j;
+    try { j = JSON.parse(t); } catch(e){ throw new Error("JSON parse failed for "+url+": "+t.slice(0,180)); }
+    if(!j || j.ok !== true) throw new Error("API not ok for "+url+": "+t.slice(0,180));
+    return j;
+  }
+
+  function pretty(v){ return JSON.stringify(v, null, 2); }
+
+  async function bootMeta(){
+    const meta = await jget("/api/meta");
+
+    const envMin = Number(meta.envelopes?.minTick ?? 0);
+    const envMax = Number(meta.envelopes?.maxTick ?? 0);
+    const envCount = Number(meta.envelopes?.count ?? 0);
+
+    const ledMin = Number(meta.ledger?.minTick ?? 0);
+    const ledMax = Number(meta.ledger?.maxTick ?? 0);
+    const ledCount = Number(meta.ledger?.count ?? 0);
+
+    setText("env-range", envMin + "-" + envMax);
+    setText("env-count", envCount);
+    setText("replay-range", ledMin + "-" + ledMax);
+    setText("replay-count", ledCount);
+
+    const env = $("tick-env");
+    if(env){
+      env.min = String(envMin);
+      env.max = String(envMax);
+      if(Number(env.value) < envMin) env.value = String(envMin);
+      setText("tick-env-label", env.value);
+    }
+
+    const rep = $("tick-replay");
+    if(rep){
+      rep.min = String(ledMin);
+      rep.max = String(ledMax);
+      if(Number(rep.value) < ledMin) rep.value = String(ledMin);
+      setText("tick-replay-label", rep.value);
+    }
+
+    const bs = $("boot-status");
+    if(bs) bs.textContent = "boot: meta ok | env " + envMin + "-" + envMax + " | ledger " + ledMin + "-" + ledMax;
+
+    return { envMin, envMax, ledMin, ledMax };
+  }
+
+  async function renderEnvelopes(){
+    const out = $("out-env");
+    const tickEl = $("tick-env");
+    if(!out || !tickEl) return;
+
+    const t = Number(tickEl.value || 0);
+    setText("tick-env-label", t);
+
+    const js = await jget("/api/envelopes_merged");
+    const arr = Array.isArray(js.data) ? js.data : [];
+
+    const hit = arr.find(x => Number(x.tick) === t) || null;
+    out.textContent = hit ? pretty(hit) : "(no envelope at tick " + t + ")";
+  }
+
+  async function renderReplay(){
+    const out = $("out-replay");
+    const tickEl = $("tick-replay");
+    if(!out || !tickEl) return;
+
+    const t = Number(tickEl.value || 0);
+    setText("tick-replay-label", t);
+
+    const js = await jget("/api/ledger");
+    const arr = Array.isArray(js.data) ? js.data : [];
+
+    const hit = arr.find(x => Number(x.tick) === t) || null;
+    out.textContent = hit ? pretty(hit) : "(no ledger proof at tick " + t + ")";
+  }
+
+  async function bindV3(){
+    // اعادة ربط كاملة (تكسير اي bindings قديمة)
+    await bootMeta();
+
+    const env = $("tick-env");
+    if(env){
+      env.oninput = ()=>{ setText("tick-env-label", env.value); renderEnvelopes().catch(()=>{}); };
+      env.onchange = ()=>{ setText("tick-env-label", env.value); renderEnvelopes().catch(()=>{}); };
+    }
+
+    const rep = $("tick-replay");
+    if(rep){
+      rep.oninput = ()=>{ setText("tick-replay-label", rep.value); renderReplay().catch(()=>{}); };
+      rep.onchange = ()=>{ setText("tick-replay-label", rep.value); renderReplay().catch(()=>{}); };
+    }
+
+    const rEnv = $("reload-env");
+    if(rEnv) rEnv.onclick = ()=>renderEnvelopes().catch(()=>{});
+
+    const rRep = $("reload-replay");
+    if(rRep) rRep.onclick = ()=>renderReplay().catch(()=>{});
+
+    // اول رندر
+    renderEnvelopes().catch(()=>{});
+    renderReplay().catch(()=>{});
+  }
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    bindV3().catch(e=>{
+      const bs = $("boot-status");
+      if(bs) bs.textContent = "boot: error | " + (e?.stack || e?.message || String(e));
+    });
+  });
+
+})();
+
+
+/*__OG_ADMIN_ALIAS_FIX__*/
+/*
+  Force single-path rendering:
+  - Any existing handlers calling renderEnvelopes/renderReplay will hit the override impl.
+*/
+try {
+  if (typeof renderEnvelopesOverride === "function") renderEnvelopes = renderEnvelopesOverride;
+  if (typeof renderReplayOverride === "function")    renderReplay    = renderReplayOverride;
+} catch(_) {}
+/*__OG_ADMIN_ALIAS_FIX__*/
