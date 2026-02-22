@@ -2,9 +2,17 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { spawnSync } = require("child_process");
 
 const ROOT = process.cwd();
+
+const { spawnSync } = require("child_process");
+
+function getCurrentChainHash(maxTick){
+  const env = Object.assign({}, process.env, { MAX_TICK: String(maxTick) });
+  const r = spawnSync("node", ["core/sim_v1.cjs"], { encoding:"utf8", env });
+  const m = (r.stdout||"").match(/^finalChainHash:\s*([a-f0-9]+)/mi);
+  return m ? m[1].trim() : null;
+}
 const PORT = Number(process.env.PORT || 5173);
 
 const MIME = {
@@ -185,7 +193,11 @@ const server = http.createServer((req, res) => {
       if (arr.some(e => Number(e.frameId) === frameId))
         return sendJSON(res, { ok:false, error:"duplicate_frameId" }, 400);
 
-      const appended = { tick, frameId, commands };
+      const prevChainHash = getCurrentChainHash(tick-1);
+      if(!prevChainHash)
+        return sendJSON(res,{ok:false,error:"cannot_compute_chain"},500);
+
+      const appended = { tick, frameId, prevChainHash, commands };
       arr.push(appended);
       fs.writeFileSync(f, JSON.stringify(arr, null, 2) + "\n", "utf8");
 

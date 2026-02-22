@@ -183,7 +183,12 @@ function simulate(initialArr, envelopes, maxTick){
     const rejected = [];
 
     // phase: validate then apply (in sorted order)
-    for(const env of envs){
+    for (const env of envs) {
+
+      // TAMPER_DETECTED_PREV_HASH
+      if (env.prevChainHash && env.prevChainHash !== chainHash) {
+        throw new Error("TAMPER_DETECTED_PREV_HASH at tick " + env.tick);
+      }
       const cmds = Array.isArray(env.commands) ? env.commands : [];
       for(const cmd of cmds){
         const v = validateCommand(state, cmd, tick);
@@ -227,7 +232,8 @@ function main(){
     .concat(Array.isArray(dev)?dev:(dev.data||[]));
 
   const ticks = mergedAll.map(e=>Number(e.tick)).filter(Number.isFinite).sort((a,b)=>a-b);
-  const maxTick = ticks.length ? ticks[ticks.length-1] : 0;
+  const envMax = Number(process.env.MAX_TICK);
+  const maxTick = Number.isFinite(envMax) ? envMax : (ticks.length ? ticks[ticks.length-1] : 0);
 
   const r = simulate(Array.isArray(initial)?initial:(initial.data||[]), mergedAll, maxTick);
 
