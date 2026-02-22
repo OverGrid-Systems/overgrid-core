@@ -1,15 +1,15 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>OverGrid Admin</title>
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="top">
-    <div class="title">OverGrid Admin</div>
-    <nav class="tabs">
+    <h1>OverGrid Admin</h1>
+    <nav class="nav">
       <button id="btn-verify">Verify</button>
       <button id="btn-envelopes">Envelopes</button>
       <button id="btn-replay">Replay</button>
@@ -17,8 +17,7 @@
     </nav>
   </header>
 
-  <main class="wrap">
-
+  <main class="main">
     <section id="tab-verify" class="panel">
       <h2>Bundle Verify</h2>
       <p>Calls /api/verify then prints stdout/stderr.</p>
@@ -29,34 +28,39 @@
     <section id="tab-envelopes" class="panel" style="display:none">
       <h2>Envelopes</h2>
       <p>Reads /api/envelopes and filters by tick.</p>
-
       <div class="row">
         <label>Tick:</label>
         <input id="tick-env" type="range" min="0" max="35" value="0" />
-        <span id="tickval-env" class="tickval">0</span>
+        <span id="tick-env-label">0</span>
         <button id="reload-env">Reload</button>
       </div>
-
       <pre id="out-env" class="out"></pre>
     </section>
 
     <section id="tab-replay" class="panel" style="display:none">
       <h2>Replay</h2>
       <p>Reads /api/ledger and shows proof at tick.</p>
-
       <div class="row">
         <label>Tick:</label>
         <input id="tick-replay" type="range" min="1" max="36" value="1" />
-        <span id="tickval-replay" class="tickval">1</span>
+        <span id="tick-replay-label">1</span>
         <button id="reload-replay">Reload</button>
       </div>
-
       <pre id="out-replay" class="out"></pre>
-      <canvas id="canvas" width="640" height="200" class="canvas"></canvas>
     </section>
 
+    <section id="tab-commands" class="panel" style="display:none">
+      <h2>Commands</h2>
+      <p>DEV ONLY: appends an envelope to dev_state/envelopes.dev.json via /api/commit.</p>
+      <div class="row">
+        <label>Tick:</label>
+        <input id="tick-cmd" type="number" value="36" min="0" />
+        <button id="send-cmd">Send Attack (A1 -> B1)</button>
+      </div>
+      <pre id="out-cmd" class="out"></pre>
+    </section>
   </main>
 
-  <script src="./admin.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>
