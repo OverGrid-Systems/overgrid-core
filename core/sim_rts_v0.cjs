@@ -557,6 +557,57 @@ function canonicalizeUnitIds(arr){
   }
   return out;
 }
+// ==========================
+// RTS v0: Command Validation + Canonicalization (RuleGate)
+// ==========================
+function isStr(x){ return typeof x === "string"; }
+function isArr(x){ return Array.isArray(x); }
+function toBigIntStr(s){ if(!isStr(s) || !/^[0-9]+$/.test(s)) throw new Error("bad int str"); return BigInt(s); }
+
+function canonUnitIds(arr){
+  // sort ascending deterministically
+  const xs = arr.slice();
+  xs.sort((a,b)=> (BigInt(a)<BigInt(b)?-1:(BigInt(a)>BigInt(b)?1:0)));
+  return xs;
+}
+
+function validateAndCanonCommand(cmd){
+  if(!cmd || typeof cmd !== "object") throw new Error("bad cmd");
+  if(cmd.type === "WORKER_GATHER"){
+    const need=["type","workerId","nodeId","hqId"];
+    for(const k of need) if(!(k in cmd)) throw new Error("missing "+k);
+    if(!isStr(cmd.workerId)||!isStr(cmd.nodeId)||!isStr(cmd.hqId)) throw new Error("bad WORKER_GATHER fields");
+    // reject unknown fields
+    for(const k of Object.keys(cmd)) if(!need.includes(k)) throw new Error("unknown field "+k);
+    return cmd;
+  }
+  if(cmd.type === "QUEUE_UNIT"){
+    const need=["type","factoryId","unitKind","count"];
+    for(const k of need) if(!(k in cmd)) throw new Error("missing "+k);
+    if(!isStr(cmd.factoryId)||!isStr(cmd.unitKind)||!isStr(cmd.count)) throw new Error("bad QUEUE_UNIT fields");
+    if(!/^[1-9][0-9]*$/.test(cmd.count)) throw new Error("bad count");
+    for(const k of Object.keys(cmd)) if(!need.includes(k)) throw new Error("unknown field "+k);
+    return cmd;
+  }
+  if(cmd.type === "ATTACK_MOVE"){
+    const need=["type","unitIds","x","y"];
+    for(const k of need) if(!(k in cmd)) throw new Error("missing "+k);
+    if(!isArr(cmd.unitIds) || cmd.unitIds.some(x=>!isStr(x)||!/^[0-9]+$/.test(x))) throw new Error("bad unitIds");
+    if(!isStr(cmd.x)||!isStr(cmd.y)||!/^[0-9]+$/.test(cmd.x)||!/^[0-9]+$/.test(cmd.y)) throw new Error("bad coords");
+    for(const k of Object.keys(cmd)) if(!need.includes(k)) throw new Error("unknown field "+k);
+    cmd.unitIds = canonUnitIds(cmd.unitIds);
+    return cmd;
+  }
+  throw new Error("unknown cmd type: "+String(cmd.type));
+}
+
+function validateAndCanonFrame(f){
+  if(!f || typeof f !== "object") throw new Error("bad frame");
+  if(!("commands" in f) || !Array.isArray(f.commands)) throw new Error("bad commands");
+  f.commands = f.commands.map(validateAndCanonCommand);
+  return f;
+}
+
 
 function applyFrame(state, frame){
   // deterministic order: commands array order is authoritative; we do not reorder commands inside a frame.
