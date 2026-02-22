@@ -1,3 +1,21 @@
+
+function __jsonGET(url){
+  return fetch(url,{cache:"no-store"}).then(async r=>{
+    const t = await r.text();
+    let j;
+    try{ j = JSON.parse(t); } catch(e){ throw new Error("BAD_JSON "+url+" :: "+t.slice(0,200)); }
+    if (Array.isArray(j)) return j;
+    if (j && Array.isArray(j.data)) return j.data;
+    return j;
+  });
+}
+function __asArr(x){
+  return Array.isArray(x) ? x : (x && Array.isArray(x.data) ? x.data : []);
+}
+function __safeStr(x){
+  try{ return typeof x==="string" ? x : JSON.stringify(x,null,2); }catch(_){ return String(x); }
+}
+
 function __asArray(x){ return Array.isArray(x) ? x : (x && Array.isArray(x.data) ? x.data : []); }
 
 
@@ -19,7 +37,7 @@ window.addEventListener("unhandledrejection", (e)=>{
 // === /BOOT ERROR TRAP ===
 
 /* OverGrid Admin v0 — minimal deterministic view (DEV)
-   - Loads: /api/initial, /api/envelopes_merged_merged_merged, /api/ledger, /api/meta
+   - Loads: /api/initial, /api/envelopes_merged_merged_merged_merged, /api/ledger, /api/meta
    - Builds a simple deterministic state timeline:
      ATTACK => target.hp -= 10 (floor at 0)
    - Renders entities on canvas, shows proof for tick.
@@ -140,7 +158,7 @@ function setTickLabel(prefix, val){
 async function loadAllIfNeeded(){
   if(!CACHE.meta) CACHE.meta = await getJSON("/api/meta");
   if(!CACHE.initial) CACHE.initial = await getJSON("/api/initial");
-  if(!CACHE.envelopes) CACHE.envelopes = await getJSON("/api/envelopes_merged_merged_merged");
+  if(!CACHE.envelopes) CACHE.envelopes = await getJSON("/api/envelopes_merged_merged_merged_merged");
   if(!CACHE.ledger) CACHE.ledger = await getJSON("/api/ledger");
 
   const envelopesArr = Array.isArray(CACHE.envelopes) ? CACHE.envelopes : (CACHE.envelopes.data ?? []);
