@@ -1,0 +1,19 @@
+{
+  "nextEntityId": "4000",
+  "players": [
+    { "id":"1", "credits":"5000", "powerProduced":"0", "powerUsed":"0", "factionId":"1" },
+    { "id":"2", "credits":"5000", "powerProduced":"0", "powerUsed":"0", "factionId":"2" }
+  ],
+  "entities": [
+    { "id":"1001", "owner":"1", "kind":"HQ", "x":"120", "y":"120" },
+    { "id":"2001", "owner":"2", "kind":"HQ", "x":"900", "y":"900" },
+
+    { "id":"1201", "owner":"1", "kind":"FACTORY", "x":"180", "y":"120" },
+    { "id":"2201", "owner":"2", "kind":"FACTORY", "x":"840", "y":"900" },
+
+    { "id":"3001", "owner":"0", "kind":"RESOURCE", "x":"512", "y":"512", "amountRemaining":"500000" },
+
+    { "id":"1101", "owner":"1", "kind":"WORKER", "x":"140", "y":"140" },
+    { "id":"2101", "owner":"2", "kind":"WORKER", "x":"880", "y":"880" }
+  ]
+}

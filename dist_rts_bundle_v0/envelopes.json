@@ -1,0 +1,21 @@
+[
+  {
+    "tick":"1",
+    "frameId":"1",
+    "commands":[
+      { "type":"WORKER_GATHER", "workerId":"1101", "nodeId":"3001", "hqId":"1001" },
+      { "type":"WORKER_GATHER", "workerId":"2101", "nodeId":"3001", "hqId":"2001" },
+
+      { "type":"QUEUE_UNIT", "factoryId":"1201", "unitKind":"TANK", "count":"3" },
+      { "type":"QUEUE_UNIT", "factoryId":"2201", "unitKind":"TANK", "count":"3" }
+    ]
+  },
+  {
+    "tick":"13",
+    "frameId":"13",
+    "commands":[
+      { "type":"ATTACK_MOVE", "unitIds":["4000","4002","4004"], "x":"900", "y":"900" },
+      { "type":"ATTACK_MOVE", "unitIds":["4001","4003","4005"], "x":"120", "y":"120" }
+    ]
+  }
+]
