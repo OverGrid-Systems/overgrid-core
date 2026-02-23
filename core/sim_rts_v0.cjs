@@ -1,3 +1,5 @@
+const RTS_SIM_VERSION="rts_v0@2026-02-23";
+console.log("RTS_SIM_VERSION",RTS_SIM_VERSION);
 "use strict";
 
 /* @DOC
