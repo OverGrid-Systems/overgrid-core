@@ -14,15 +14,19 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+
     defaults:
       run:
         shell: bash
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
+
       - run: npm ci
       - run: npm run ci:all
 
@@ -30,6 +34,7 @@ jobs:
     name: ci-all
     runs-on: ubuntu-latest
     needs: [ci-matrix]
+    if: ${{ always() }}
     steps:
       - name: Gate
         run: |
