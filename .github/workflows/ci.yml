@@ -1,19 +1,41 @@
 name: CI
+
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
+    branches: [ "main" ]
+  push:
     branches: [ "main" ]
 
 jobs:
-  ci_all:
-    name: ci-all
-    runs-on: ubuntu-latest
+  ci-matrix:
+    name: ci-matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
+
       - run: npm ci
       - run: npm run ci:all
+
+  ci-all:
+    name: ci-all
+    runs-on: ubuntu-latest
+    needs: [ci-matrix]
+    steps:
+      - name: Gate
+        run: |
+          echo "Matrix result: ${{ needs.ci-matrix.result }}"
+          test "${{ needs.ci-matrix.result }}" = "success"
