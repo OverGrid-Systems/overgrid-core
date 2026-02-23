@@ -14,4 +14,6 @@ bash scripts/ci_verify_rts_bundle_v0.sh
 
 bash scripts/ci_rulegate_contract_v0.sh
 
+bash scripts/ci_verify_golden_hashes_v0.sh
+
 echo "OK_CI_ALL"

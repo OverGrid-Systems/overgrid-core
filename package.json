@@ -12,7 +12,8 @@
     "rts:sim": "node core/sim_rts_v0.cjs",
     "ci:all": "bash scripts/ci_all.sh",
     "ci:verify:rts_v0": "bash scripts/ci_verify_rts_bundle_v0.sh",
-    "ci:rulegate:v0": "bash scripts/ci_rulegate_contract_v0.sh"
+    "ci:rulegate:v0": "bash scripts/ci_rulegate_contract_v0.sh",
+    "ci:golden:v0": "bash scripts/ci_verify_golden_hashes_v0.sh"
   },
   "keywords": [],
   "author": ""
