@@ -8,6 +8,9 @@ on:
     branches: [ "main" ]
   push:
     branches: [ "main" ]
+concurrency:
+  group: CI-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci-matrix:
