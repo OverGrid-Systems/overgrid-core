@@ -1,12 +1,12 @@
 name: CI
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  ci_all:
+  ci-all:
     name: ci-all
     runs-on: ubuntu-latest
     steps:
