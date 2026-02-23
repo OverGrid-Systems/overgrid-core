@@ -1,0 +1,8 @@
+{
+  "version": "contract_hash_v0",
+  "inputs": [
+    "core/spec/rts_command_types_v0.json",
+    "core/spec/rts_command_spec_v0.md"
+  ],
+  "expectedSha256": "64bbf12d5169c696ee64702f999174984041be56920505a7eb21f3a2fe06b5eb"
+}

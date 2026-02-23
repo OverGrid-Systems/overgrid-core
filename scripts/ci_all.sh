@@ -18,4 +18,6 @@ bash scripts/ci_verify_golden_hashes_v0.sh
 
 bash scripts/ci_verify_replay_v0.sh
 
+bash scripts/ci_verify_contract_hash_v0.sh
+
 echo "OK_CI_ALL"
