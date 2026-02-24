@@ -29,8 +29,6 @@ const SOURCES = [
   "scripts/ci_tamper_test.sh",
 ];
 
-const START = "";
-const END   = "";
 
 function read(rel){ return fs.readFileSync(path.join(ROOT, rel), "utf8"); }
 function exists(rel){ return fs.existsSync(path.join(ROOT, rel)); }
@@ -66,13 +64,14 @@ function parseYamlish(body){
 }
 
 function buildAutogenSection(parsed){
-
   const L = [];
-  L.push(START);  L.push("");
   L.push("## @DOC Index (extracted)");
+
   if(!parsed.length){
-    L.push("- (none found) — add /* @DOC ... @end */ blocks to source files");    return L.join("\n") + "\n";
+    L.push("- (none found) — add /* @DOC ... @end */ blocks to source files");
+    return L.join("\n") + "\n";
   }
+
   for(const p of parsed){
     L.push(`- ${p.title || "(untitled)"} — ${p.rel}`);
     if(Array.isArray(p.guarantees) && p.guarantees.length){
@@ -87,7 +86,9 @@ function buildAutogenSection(parsed){
     if(Array.isArray(p.notes) && p.notes.length){
       for(const n of p.notes) L.push(`  - note: ${n}`);
     }
-  }  return L.join("\n") + "\n";
+  }
+
+  return L.join("\n") + "\n";
 }
 
 function patchFile(relPath, autogenBlock){
