@@ -64,6 +64,46 @@ const GENESIS = sha256Hex("OG3_RTS_GENESIS");
 const MAP_MIN = 0n;
 const MAP_MAX = 1024n; // keep tiny for now
 
+const { loadUnitRegistryV0 } = require("./units_v0.cjs");
+
+// Map: RTS kind -> unitId in registry
+const KIND_TO_UNITID_V0 = {
+  INF: "rifleman"
+};
+
+// Apply registry stats to a DEF entry (BigInt-safe)
+function applyRegistryStatsToDefV0(kind, def){
+  if (process.env.RTS_USE_UNIT_REGISTRY_V0 !== "1") return def;
+
+  const unitId = KIND_TO_UNITID_V0[kind];
+  if (!unitId) return def;
+
+  try {
+    const reg = loadUnitRegistryV0();
+    if (!reg) return def;
+    const u = reg.get(unitId);
+    if (!u) return def;
+
+    const out = { ...def, weapon: def.weapon ? { ...def.weapon } : null };
+
+    if (u.combat){
+      if (Number.isInteger(u.combat.maxHp)) out.hp = BigInt(u.combat.maxHp);
+      if (out.weapon){
+        if (Number.isInteger(u.combat.damage)) out.weapon.dmg = BigInt(u.combat.damage);
+        if (Number.isInteger(u.combat.range))  out.weapon.range = BigInt(u.combat.range);
+      }
+    }
+    if (u.move){
+      if (Number.isInteger(u.move.speed)) out.speed = BigInt(u.move.speed);
+    }
+
+    return out;
+  } catch {
+    return def;
+  }
+}
+
+
 // Unit/Structure defs (v0)
 const DEF = {
   HQ:       { kind:"HQ",       isStructure:true,  cost:0n,    buildTicks:0n,  hp:2000n, speed:0n,  radius:6n, weapon:null },
@@ -290,7 +330,8 @@ function updateHashes(state, emitLedger){
 function getEntity(state, id){ return state.entities.get(parseU64(id).toString()) || null; }
 
 function spawnEntity(state, owner, kind, x, y){
-  const def = DEF[kind];
+  let def = DEF[kind];
+  def = applyRegistryStatsToDefV0(kind, def);
   if (!def) throw new Error("UNKNOWN_SPAWN_KIND:"+kind);
   const id = state.nextEntityId;
   state.nextEntityId = u64(state.nextEntityId + 1n);
@@ -773,6 +814,35 @@ function run(){
 }
 
 run();
+
+
+
+if (process.env.RTS_USE_UNIT_REGISTRY_V0 === "1") {
+  const reg = loadUnitRegistryV0();
+  const u = reg ? reg.get("rifleman") : null;
+  const def = applyRegistryStatsToDefV0("INF", DEF.INF);
+
+  console.log("OK_RTS_UNIT_REGISTRY_V0_LOADED", reg ? reg.size : 0);
+  if (u) {
+    console.log(
+      "OK_RTS_UNIT_STATS_FROM_REGISTRY rifleman",
+      "hp=" + u.combat.maxHp,
+      "dmg=" + u.combat.damage,
+      "range=" + u.combat.range,
+      "speed=" + u.move.speed
+    );
+  } else {
+    console.log("OK_RTS_UNIT_STATS_FROM_REGISTRY rifleman MISSING");
+  }
+
+  console.log(
+    "OK_RTS_DEF_AFTER_REGISTRY INF",
+    "hp=" + def.hp.toString(),
+    "dmg=" + (def.weapon ? def.weapon.dmg.toString() : "null"),
+    "range=" + (def.weapon ? def.weapon.range.toString() : "null"),
+    "speed=" + def.speed.toString()
+  );
+}
 
 if (process.env.RTS_UNITS_V0 === "1") {
   const units = loadUnitsV0();
