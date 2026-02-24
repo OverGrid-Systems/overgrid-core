@@ -43,4 +43,6 @@ bash scripts/ci_verify_unit_art_registry_hash_v0.sh
 
 bash scripts/ci_verify_rts_bundle_hash_v0.sh
 
+bash scripts/ci_verify_rts_bundle_golden_hash_v0.sh
+
 echo "OK_CI_ALL"
