@@ -1,7 +1,7 @@
 {
   "version": "unit_registry_v0",
   "generatedFrom": "core/data/units/*.json",
-  "count": 1,
+  "count": 2,
   "units": [
     {
       "version": "unit_v0",
@@ -16,6 +16,24 @@
         "maxHp": 100,
         "damage": 8,
         "range": 6
+      },
+      "move": {
+        "speed": 5
+      }
+    },
+    {
+      "version": "unit_v0",
+      "unitId": "worker_v0",
+      "name": "Worker",
+      "class": "INFANTRY",
+      "cost": {
+        "credits": 200,
+        "timeTicks": 60
+      },
+      "combat": {
+        "maxHp": 100,
+        "damage": 0,
+        "range": 0
       },
       "move": {
         "speed": 5

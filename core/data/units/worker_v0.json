@@ -1,0 +1,9 @@
+{
+  "version": "unit_v0",
+  "unitId": "worker_v0",
+  "name": "Worker",
+  "class": "INFANTRY",
+  "cost": { "credits": 200, "timeTicks": 60 },
+  "combat": { "maxHp": 100, "damage": 0, "range": 0 },
+  "move": { "speed": 5 }
+}
