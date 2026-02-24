@@ -22,4 +22,6 @@ bash scripts/ci_verify_contract_hash_v0.sh
 
 bash scripts/ci_verify_sim_contract_hash_v1.sh
 
+bash scripts/ci_verify_locks_md_v0.sh
+
 echo "OK_CI_ALL"
