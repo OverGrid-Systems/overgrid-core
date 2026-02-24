@@ -25,4 +25,6 @@ bash scripts/ci_verify_locks_md_hash_v1.sh
 
 bash scripts/ci_verify_event_surface_hash_v1.sh
 
+bash scripts/ci_verify_identity_lock_v0.sh
+
 echo "OK_CI_ALL"

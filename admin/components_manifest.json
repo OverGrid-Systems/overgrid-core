@@ -1,0 +1,8 @@
+{
+  "version": "components_manifest_v0",
+  "components": [
+    { "name": "DiffViewer", "purpose": "Show human-reviewable diffs for draft vs approved rules/units." },
+    { "name": "RuleGatePanel", "purpose": "Validate and reject unknown fields/types before commit." },
+    { "name": "ApprovalWorkflow", "purpose": "Draft -> Review -> Approve -> Commit, with audit log." }
+  ]
+}
