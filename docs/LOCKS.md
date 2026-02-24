@@ -1,6 +1,6 @@
 # OverGrid Core — LOCKS (Source of Truth)
 
-This repo is intentionally "hard to change". The purpose is deterministic replay + contract stability.
+This repo is intentionally hard to change. The purpose is deterministic replay + contract stability.
 
 ## Update Policy (when a lock must change)
 1) Update the underlying spec/content intentionally.
@@ -8,7 +8,7 @@ This repo is intentionally "hard to change". The purpose is deterministic replay
 3) CI must go green.
 4) PR must clearly state why the lock changed.
 
-<!-- AUTOGEN_LOCKS_V1:START -->
+<!-- AUTOGEN_LOCKS_V1_START -->
 ## 1) CI Gate (must be green)
 - Entry: `npm run ci:all`
 
@@ -39,4 +39,4 @@ This repo is intentionally "hard to change". The purpose is deterministic replay
 - event_surface_hash_v1
   - file: `core/spec/event_surface_v1.md`
   - sha256: `24ef2da03410f1040df0fc443cba0191dbf148101b0586b8032e598961f4edcb`
-<!-- AUTOGEN_LOCKS_V1:END -->
+<!-- AUTOGEN_LOCKS_V1_END -->
