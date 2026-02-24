@@ -23,6 +23,8 @@ notes:
 */
 
 const fs = require("fs");
+
+const { loadUnitsV0 } = require("./units_v0.cjs");
 const RTS_CMD_TYPES_V0 = require("./spec/rts_command_types_v0.json");
 const crypto = require("crypto");
 
@@ -771,3 +773,9 @@ function run(){
 }
 
 run();
+
+if (process.env.RTS_UNITS_V0 === "1") {
+  const units = loadUnitsV0();
+  console.log("OK_RTS_UNITS_V0_LOADED", units.size);
+}
+
