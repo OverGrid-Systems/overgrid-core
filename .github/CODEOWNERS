@@ -1,0 +1,14 @@
+# OverGrid Core — Ownership Locks
+
+# CI / workflows are security-critical
+.github/workflows/* @rashidkharma
+
+# Build & verification scripts
+scripts/* @rashidkharma
+
+# Core specs & contracts
+core/spec/* @rashidkharma
+
+# LLM surface (future)
+admin/llm/** @rashidkharma
+admin/prompts/** @rashidkharma
