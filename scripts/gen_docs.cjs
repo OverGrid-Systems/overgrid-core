@@ -1,3 +1,20 @@
+
+function injectAutogenBlock(filePath, startMarker, endMarker, block){
+  const fs = require("fs");
+  if(!fs.existsSync(filePath)) throw new Error("MISSING_DOC: " + filePath);
+
+  const src = fs.readFileSync(filePath,"utf8");
+  if(!src.includes(startMarker) || !src.includes(endMarker)){
+    throw new Error("AUTOGEN markers missing in " + filePath);
+  }
+
+  const before = src.split(startMarker)[0] + startMarker + "\n";
+  const after  = "\n" + endMarker + src.split(endMarker)[1];
+  const out = (before + block.trimEnd() + after).replace(/\n{3,}/g,"\n\n");
+
+  fs.writeFileSync(filePath, out, "utf8");
+}
+
 "use strict";
 
 const fs = require("fs");
@@ -79,21 +96,23 @@ function buildAutogenSection(parsed){
   return L.join("\n") + "\n";
 }
 
-function patchFile(rel, autogen){
-  const abs = path.join(ROOT, rel);
-  let s = fs.readFileSync(abs, "utf8");
-  if(!s.includes(START) || !s.includes(END)){
-    // if markers missing, append at end
-    s = s.replace(/\s*$/, "\n\n" + autogen);
-  } else {
-    const a = s.indexOf(START);
-    const b = s.indexOf(END);
-    if(b < a) throw new Error(`Bad AUTOGEN markers order in ${rel}`);
-    const before = s.slice(0, a).replace(/\s*$/, "") + "\n\n";
-    const after  = s.slice(b + END.length).replace(/^\s*/, "\n");
-    s = before + autogen + after;
-  }
-  fs.writeFileSync(abs, s, "utf8");
+function patchFile(relPath, autogenBlock){
+  // Per-file hard markers (v1). Missing markers => hard fail.
+  const markers = {
+    "docs/CURRENT_SYSTEM_STATE.md": {
+      start: "<!-- AUTOGEN_CURRENT_SYSTEM_STATE_V1_START -->",
+      end: "<!-- AUTOGEN_CURRENT_SYSTEM_STATE_V1_END -->"
+    },
+    "docs/ARCHITECTURE_MAP.md": {
+      start: "<!-- AUTOGEN_ARCHITECTURE_MAP_V1_START -->",
+      end: "<!-- AUTOGEN_ARCHITECTURE_MAP_V1_END -->"
+    }
+  };
+
+  const m = markers[relPath];
+  if(!m) throw new Error("NO_MARKER_MAPPING_FOR: " + relPath);
+
+  injectAutogenBlock(relPath, m.start, m.end, autogenBlock);
 }
 
 function main(){
