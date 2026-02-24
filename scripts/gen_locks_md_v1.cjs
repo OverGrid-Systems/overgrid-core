@@ -1,8 +1,6 @@
 const fs = require("fs");
 
-function readJson(p){
-  return JSON.parse(fs.readFileSync(p,"utf8"));
-}
+function readJson(p){ return JSON.parse(fs.readFileSync(p,"utf8")); }
 function must(path){
   if(!fs.existsSync(path)) throw new Error("MISSING_FILE: "+path);
   return path;
@@ -14,15 +12,16 @@ function shaLine(title, file, sha){
 const locksMd = "docs/LOCKS.md";
 must(locksMd);
 
-const sim = readJson(must("core/spec/sim_contract_hash_v1.json"));            // {file, sha256}
-const rts = readJson(must("core/spec/contract_hash_v0.json"));               // {file?, sha256} or embedded
-const locks = readJson(must("core/spec/locks_md_hash_v1.json"));             // {file, sha256} (self lock)
-const ev = readJson(must("core/spec/event_surface_hash_v1.json"));           // {file, sha256}
+const sim = readJson(must("core/spec/sim_contract_hash_v1.json"));
+const rts = readJson(must("core/spec/contract_hash_v0.json"));
+const ev  = readJson(must("core/spec/event_surface_hash_v1.json"));
 
-// Golden hashes are currently printed by CI; keep them as literals in the doc section.
-// Source-of-truth for those is your existing golden hashes file; if later you put them in JSON, wire it here.
-const GOLDEN_BUNDLE_V1 = "686988bfaa1ed12131647fa3161d8bdb4590863d83c66ec0fdb7ad65daf87769";
+// Golden hashes are printed by CI; keep them as literals here for readability.
+const GOLDEN_BUNDLE_V1   = "686988bfaa1ed12131647fa3161d8bdb4590863d83c66ec0fdb7ad65daf87769";
 const GOLDEN_RTS_BUNDLE_V0 = "1256e1d0687090b1b9e8d6421212c9f02f48fd56262bfe7be68b5e8c62ccb445";
+
+const rtsSha =
+  rts.sha256 || rts.expectedSha256 || rts.hash || rts.contractSha256 || "UNKNOWN";
 
 const block =
 `## 1) CI Gate (must be green)
@@ -37,13 +36,15 @@ const block =
 - Verifier: \`scripts/ci_verify_replay_v0.sh\`
 
 ## 4) RTS Command Contract Lock (v0)
-${shaLine("contract_hash_v0", "core/spec/rts_command_spec_v0.md + rts_command_types_v0.json", rts.sha256 || rts.expectedSha256 || rts.hash || rts.contractSha256 || "UNKNOWN")}
+${shaLine("contract_hash_v0", "core/spec/rts_command_spec_v0.md + rts_command_types_v0.json", rtsSha)}
 
 ## 5) Simulation Contract Lock (v1)
 ${shaLine("sim_contract_hash_v1", sim.file || "core/spec/sim_spec_v1.md", sim.sha256)}
 
 ## 6) LOCKS.md Hash Lock (v1)
-${shaLine("locks_md_hash_v1", locks.file || "docs/LOCKS.md", locks.sha256)}
+- Source of truth: \`core/spec/locks_md_hash_v1.json\`
+- Verifier: \`scripts/ci_verify_locks_md_hash_v1.sh\`
+- Note: LOCKS.md does NOT print its own hash to avoid self-hash loops.
 
 ## 7) Event Surface Contract Lock (v1)
 ${shaLine("event_surface_hash_v1", ev.file || "core/spec/event_surface_v1.md", ev.sha256)}

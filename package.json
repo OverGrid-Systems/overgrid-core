@@ -8,7 +8,7 @@
     "admin:dev": "node scripts/dev_admin_server.cjs",
     "bundle:verify": "bash scripts/ci_verify_bundle_v1.sh",
     "docs:gen": "node scripts/gen_docs.cjs",
-    "docs:check": "node scripts/gen_docs.cjs && git diff --exit-code docs/CURRENT_SYSTEM_STATE.md docs/ARCHITECTURE_MAP.md",
+    "docs:check": "node scripts/gen_docs.cjs && git diff --exit-code docs/CURRENT_SYSTEM_STATE.md docs/ARCHITECTURE_MAP.md docs/LOCKS.md core/spec/locks_md_hash_v1.json",
     "rts:sim": "node core/sim_rts_v0.cjs",
     "ci:all": "bash scripts/ci_all.sh",
     "ci:verify:rts_v0": "bash scripts/ci_verify_rts_bundle_v0.sh",

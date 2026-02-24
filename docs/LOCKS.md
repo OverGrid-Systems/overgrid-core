@@ -31,9 +31,9 @@ This repo is intentionally "hard to change". The purpose is deterministic replay
   - sha256: `undefined`
 
 ## 6) LOCKS.md Hash Lock (v1)
-- locks_md_hash_v1
-  - file: `docs/LOCKS.md`
-  - sha256: `ae19ac29fb7478073e10b764726a85573be15a16653d1732a870f095646ddb3d`
+- Source of truth: `core/spec/locks_md_hash_v1.json`
+- Verifier: `scripts/ci_verify_locks_md_hash_v1.sh`
+- Note: LOCKS.md does NOT print its own hash to avoid self-hash loops.
 
 ## 7) Event Surface Contract Lock (v1)
 - event_surface_hash_v1
