@@ -34,8 +34,16 @@ This repo is intentionally "hard to change". The purpose is deterministic replay
   - 3db892b117ce3e9b866e33bfe23a1c675cd9b19012a3c328e38bf5efdcdf0333
 - Generator: `scripts/gen_sim_contract_hash_v1.cjs`
 - Verifier: `scripts/ci_verify_sim_contract_hash_v1.sh`
-
-## 6) Ownership Lock (CODEOWNERS)
+## 6) Event Surface Contract Lock (v1)
+- Spec: `core/spec/event_surface_hash_v1.json`
+- Input:
+  - `core/spec/event_surface_v1.md`
+- Expected sha256:
+  - 24ef2da03410f1040df0fc443cba0191dbf148101b0586b8032e598961f4edcb
+- Generator: `scripts/gen_event_surface_hash_v1.cjs`
+- Verifier: `scripts/ci_verify_event_surface_hash_v1.sh`
+  
+## 7) Ownership Lock (CODEOWNERS)
 - File: `.github/CODEOWNERS`
 - Security-critical areas:
   - `.github/workflows/*`
