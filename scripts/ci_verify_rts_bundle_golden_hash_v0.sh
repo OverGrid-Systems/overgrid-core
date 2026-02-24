@@ -21,7 +21,8 @@ NODE
 
 # اجلب الـFinal ChainHash من verifier الموجود
 OUT="$(bash scripts/ci_verify_rts_bundle_v0.sh)"
-GOT="$(printf '%s\n' "$OUT" | sed -nE 's/^Final ChainHash:\s*([0-9a-f]+)\s*$/\1/p' | tail -n 1)"
+GOT="20 20 12 61 79 80 81 98 33 100 204 250 395 398 399 400 701printf "%s
+" "" | grep -E "^Final ChainHash:" | tail -n 1 | awk "{print $3}")"
 
 test -n "$GOT" || { echo "BAD_RTS_BUNDLE_V0_OUTPUT"; echo "$OUT"; exit 1; }
 
