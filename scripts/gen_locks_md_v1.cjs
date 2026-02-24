@@ -16,7 +16,6 @@ must(locksMd);
 
 const sim = readJson(must("core/spec/sim_contract_hash_v1.json"));            // {file, sha256}
 const rts = readJson(must("core/spec/contract_hash_v0.json"));               // {file?, sha256} or embedded
-const locks = readJson(must("core/spec/locks_md_hash_v1.json"));             // {file, sha256} (self lock)
 const ev = readJson(must("core/spec/event_surface_hash_v1.json"));           // {file, sha256}
 
 // Golden hashes are currently printed by CI; keep them as literals in the doc section.
@@ -43,7 +42,8 @@ ${shaLine("contract_hash_v0", "core/spec/rts_command_spec_v0.md + rts_command_ty
 ${shaLine("sim_contract_hash_v1", sim.file || "core/spec/sim_spec_v1.md", sim.sha256)}
 
 ## 6) LOCKS.md Hash Lock (v1)
-${shaLine("locks_md_hash_v1", locks.file || "docs/LOCKS.md", locks.sha256)}
+- Spec: `core/spec/locks_md_hash_v1.json`
+- Verifier: `scripts/ci_verify_locks_md_hash_v1.sh`
 
 ## 7) Event Surface Contract Lock (v1)
 ${shaLine("event_surface_hash_v1", ev.file || "core/spec/event_surface_v1.md", ev.sha256)}
