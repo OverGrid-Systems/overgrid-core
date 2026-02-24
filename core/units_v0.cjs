@@ -37,3 +37,19 @@ function loadUnitRegistryV0(){
 }
 
 module.exports.loadUnitRegistryV0 = loadUnitRegistryV0;
+
+function loadUnitArtRegistryV0(){
+  const p = "core/dist/unit_art_registry_v0.json";
+  if(!fs.existsSync(p)) return null;
+  const reg = readJson(p);
+  if(!reg || reg.version !== "unit_art_registry_v0" || !Array.isArray(reg.unitArt)) return null;
+
+  const out = new Map();
+  for(const a of reg.unitArt){
+    if(!a || a.version !== "unit_art_v0") continue;
+    out.set(a.unitId, a);
+  }
+  return out;
+}
+
+module.exports.loadUnitArtRegistryV0 = loadUnitArtRegistryV0;
