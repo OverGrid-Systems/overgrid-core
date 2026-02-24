@@ -24,6 +24,27 @@ notes:
 
 const fs = require("fs");
 
+const { loadUnitArtRegistryV0 } = require("./units_v0.cjs");
+
+function loadKindMapV0Obj(){
+  try{
+    const km = JSON.parse(require("fs").readFileSync("core/spec/rts_kind_to_unitid_v0.json","utf8"));
+    if(!km || km.version !== "rts_kind_to_unitid_v0" || !km.map) return null;
+    return km.map;
+  }catch{ return null; }
+}
+
+function getUnitArtByKindV0(kind){
+  if(process.env.RTS_USE_UNIT_ART_REGISTRY_V0 !== "1") return null;
+  const km = loadKindMapV0Obj() || {};
+  const unitId = km[kind];
+  if(!unitId) return null;
+  const reg = loadUnitArtRegistryV0();
+  if(!reg) return null;
+  return reg.get(unitId) || null;
+}
+
+
 const { loadUnitsV0 } = require("./units_v0.cjs");
 const RTS_CMD_TYPES_V0 = require("./spec/rts_command_types_v0.json");
 const crypto = require("crypto");
@@ -826,6 +847,16 @@ function run(){
 }
 
 run();
+
+
+if (process.env.RTS_USE_UNIT_ART_REGISTRY_V0 === "1") {
+  const a = getUnitArtByKindV0("INF");
+  if(a){
+    console.log("OK_RTS_UNIT_ART_FROM_REGISTRY", "INF", a.unitId, "silhouette=" + a.silhouette);
+  } else {
+    console.log("OK_RTS_UNIT_ART_FROM_REGISTRY", "INF", "MISSING");
+  }
+}
 
 
 
