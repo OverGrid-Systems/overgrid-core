@@ -1,8 +1,22 @@
 {
   "version": "components_manifest_v0",
-  "components": [
-    { "name": "DiffViewer", "purpose": "Show human-reviewable diffs for draft vs approved rules/units." },
-    { "name": "RuleGatePanel", "purpose": "Validate and reject unknown fields/types before commit." },
-    { "name": "ApprovalWorkflow", "purpose": "Draft -> Review -> Approve -> Commit, with audit log." }
+  "principles": [
+    "Admin UI is authoritative; LLM outputs are drafts only",
+    "No hidden writes: every change is diffable and auditable",
+    "Everything is schema-backed; unknown fields are rejected"
+  ],
+  "coreScreens": [
+    { "id": "dashboard", "purpose": "health + last CI + last chainhash" },
+    { "id": "replay", "purpose": "load replay bundle, verify, compare hashes" },
+    { "id": "rulesets", "purpose": "browse versioned rulesets + hashes" },
+    { "id": "units", "purpose": "unit data editor (schema validated)" },
+    { "id": "balance", "purpose": "tuning tables + sandbox runs" },
+    { "id": "audit", "purpose": "append-only audit log viewer" }
+  ],
+  "widgets": [
+    { "id": "diffViewer", "purpose": "show canonical JSON diff before approval" },
+    { "id": "hashBadge", "purpose": "display sha256/chainhash with copy" },
+    { "id": "ruleGateReport", "purpose": "explain validation rejects deterministically" },
+    { "id": "draftQueue", "purpose": "LLM drafts pending review" }
   ]
 }
