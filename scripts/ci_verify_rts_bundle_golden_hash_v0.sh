@@ -4,58 +4,32 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-node - <<'NODE'
-const fs = require("fs");
-const crypto = require("crypto");
+GOLD="core/spec/golden_hashes_v0.json"
+test -f "$GOLD" || { echo "MISSING_GOLDEN_HASHES_V0 $GOLD"; exit 1; }
 
-const goldenPath = "core/spec/golden_hashes_v0.json";
-if(!fs.existsSync(goldenPath)){
-  console.error("MISSING_GOLDEN_HASHES_V0", goldenPath);
-  process.exit(1);
-}
-
-let j;
-try { j = JSON.parse(fs.readFileSync(goldenPath, "utf8")); }
-catch { console.error("BAD_GOLDEN_HASHES_V0"); process.exit(1); }
-
-const keys = (j && typeof j === "object") ? Object.keys(j) : [];
-function asHash(v){
-  if(typeof v === "string") return v;
-  if(v && typeof v === "object"){
-    for (const k of ["sha256","hash","value","expected","hex"]) {
-      if(typeof v[k] === "string") return v[k];
-    }
-  }
-  return null;
-}
-
-let expected = asHash(j?.rts_bundle_v0)
-  ?? asHash(j?.golden?.rts_bundle_v0)
-  ?? asHash(j?.hashes?.rts_bundle_v0);
-
-if(!expected){
-  console.error("BAD_GOLDEN_HASHES_V0");
-  console.error("golden_keys", keys.join(",") || "<none>");
-  console.error("rts_bundle_v0_type", typeof (j && j.rts_bundle_v0));
-  console.error("rts_bundle_v0_value", JSON.stringify(j && j.rts_bundle_v0));
-  process.exit(1);
-}
-
-const distPath = "core/dist/rts_bundle_v0.json";
-if(!fs.existsSync(distPath)){
-  console.error("MISSING_RTS_BUNDLE_V0_DIST", distPath);
-  process.exit(1);
-}
-
-const buf = fs.readFileSync(distPath);
-const got = crypto.createHash("sha256").update(buf).digest("hex");
-
-if(got !== expected){
-  console.error("BAD_RTS_BUNDLE_V0_GOLDEN_HASH");
-  console.error("expected", expected);
-  console.error("got     ", got);
-  process.exit(1);
-}
-
-console.log("OK_RTS_BUNDLE_V0_GOLDEN_HASH", got);
+EXPECTED="$(node - <<'NODE'
+const fs=require("fs");
+const j=JSON.parse(fs.readFileSync("core/spec/golden_hashes_v0.json","utf8"));
+const v = j?.rts_bundle_v0;
+let exp = null;
+if(typeof v === "string") exp = v;
+else if(v && typeof v === "object") exp = v.expectedFinalChainHash || v.chainHash || v.finalChainHash || v.hash || v.value || null;
+if(!exp){ console.error("BAD_GOLDEN_HASHES_V0"); console.error("rts_bundle_v0_value", JSON.stringify(v)); process.exit(1); }
+process.stdout.write(exp);
 NODE
+)"
+
+# اجلب الـFinal ChainHash من verifier الموجود
+OUT="$(bash scripts/ci_verify_rts_bundle_v0.sh)"
+GOT="$(printf '%s\n' "$OUT" | sed -nE 's/^Final ChainHash:\s*([0-9a-f]+)\s*$/\1/p' | tail -n 1)"
+
+test -n "$GOT" || { echo "BAD_RTS_BUNDLE_V0_OUTPUT"; echo "$OUT"; exit 1; }
+
+if [ "$GOT" != "$EXPECTED" ]; then
+  echo "BAD_RTS_BUNDLE_V0_GOLDEN_CHAINHASH"
+  echo "expected $EXPECTED"
+  echo "got      $GOT"
+  exit 1
+fi
+
+echo "OK_RTS_BUNDLE_V0_GOLDEN_CHAINHASH $GOT"
