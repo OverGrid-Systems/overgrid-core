@@ -1,26 +1,33 @@
 {
   "version": "design_tokens_v0",
   "ui": {
-    "density": "compact",
-    "font": {
-      "family": "system-ui",
-      "scale": 1.0
-    },
-    "radius": 8,
-    "spacing": {
-      "xs": 4,
-      "sm": 8,
-      "md": 12,
-      "lg": 16,
-      "xl": 24
+    "density": "compact_rts",
+    "cornerRadiusPx": 8,
+    "borderWidthPx": 1,
+    "shadow": "subtle",
+    "typography": {
+      "base": "system",
+      "weight": { "normal": 400, "semibold": 600, "bold": 700 }
     }
   },
   "colors": {
-    "bg": "#0b0f14",
-    "panel": "#111823",
-    "text": "#e8eef7",
-    "muted": "#9fb0c3",
-    "accent": "#5da9ff",
-    "danger": "#ff5d5d"
-  }
+    "background": { "base": "#0B0F14", "panel": "#111824", "panel2": "#0F1520" },
+    "text": { "primary": "#E6EDF3", "secondary": "#A8B3C2", "muted": "#6B7788" },
+    "stroke": { "subtle": "#223043", "strong": "#2B3A52" },
+    "status": {
+      "ok": "#2ECC71",
+      "warn": "#F1C40F",
+      "error": "#E74C3C",
+      "info": "#3498DB"
+    },
+    "factionAccents": {
+      "northAmerica": "#2E86FF",
+      "eurasia": "#E84A2A",
+      "mena": "#F0B429",
+      "eastAsia": "#26C6DA"
+    }
+  },
+  "spacingPx": { "xs": 4, "sm": 8, "md": 12, "lg": 16, "xl": 24 },
+  "icon": { "sizePx": { "sm": 16, "md": 20, "lg": 24 }, "strokeWidthPx": 1.5 },
+  "tables": { "rowHeightPx": 32, "zebra": true }
 }
