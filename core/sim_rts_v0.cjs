@@ -66,6 +66,18 @@ const MAP_MAX = 1024n; // keep tiny for now
 
 const { loadUnitRegistryV0 } = require("./units_v0.cjs");
 
+function loadKindMapV0(){
+  const p = "core/spec/rts_kind_to_unitid_v0.json";
+  if(!fs.existsSync(p)) return null;
+  try {
+    const j = JSON.parse(fs.readFileSync(p,"utf8"));
+    if(!j || j.version !== "rts_kind_to_unitid_v0" || !j.map) return null;
+    return j.map;
+  } catch {
+    return null;
+  }
+}
+
 // Map: RTS kind -> unitId in registry
 const KIND_TO_UNITID_V0 = {
   INF: "rifleman"
@@ -75,7 +87,7 @@ const KIND_TO_UNITID_V0 = {
 function applyRegistryStatsToDefV0(kind, def){
   if (process.env.RTS_USE_UNIT_REGISTRY_V0 !== "1") return def;
 
-  const unitId = KIND_TO_UNITID_V0[kind];
+  const km = loadKindMapV0() || {}; const unitId = km[kind];
   if (!unitId) return def;
 
   try {
