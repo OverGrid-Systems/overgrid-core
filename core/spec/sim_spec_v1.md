@@ -32,3 +32,5 @@
 ## 7. Budget Rules
 - Per-tick compute budget.
 - Overflow = reject command.
+
+<!-- intentional-break -->
