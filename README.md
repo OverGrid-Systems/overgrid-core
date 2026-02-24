@@ -47,3 +47,6 @@ From repo root:
 ```bash
 cd dist_golden_bundle_v1
 bash verify.sh
+‘nn’
+
+<!-- lock-test -->
