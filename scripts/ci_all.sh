@@ -31,4 +31,6 @@ bash scripts/ci_unit_data_v0.sh
 
 bash scripts/ci_rts_units_v0_smoke.sh
 
+bash scripts/ci_verify_unit_registry_v0.sh
+
 echo "OK_CI_ALL"

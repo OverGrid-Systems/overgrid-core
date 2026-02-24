@@ -1,0 +1,25 @@
+{
+  "version": "unit_registry_v0",
+  "generatedFrom": "core/data/units/*.json",
+  "count": 1,
+  "units": [
+    {
+      "version": "unit_v0",
+      "unitId": "rifleman",
+      "name": "Rifleman",
+      "class": "INFANTRY",
+      "cost": {
+        "credits": 100,
+        "timeTicks": 120
+      },
+      "combat": {
+        "maxHp": 100,
+        "damage": 8,
+        "range": 6
+      },
+      "move": {
+        "speed": 5
+      }
+    }
+  ]
+}
