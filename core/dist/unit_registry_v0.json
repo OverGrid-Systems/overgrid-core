@@ -1,55 +1,43 @@
 {
-  "unit_art": [
-    {
-      "iconCue": "Top-down/3-4 view: rifle shape dominates; helmet + shoulders block; minimal internal detail.",
-      "silhouette": "Humanoid with rifle + small backpack; readable helmet outline; weapon held forward.",
-      "unitId": "rifleman",
-      "version": "unit_art_v0"
-    },
-    {
-      "iconCue": "Hard hat + wrench icon cue. Simple yellow helmet shape. Non-combat role.",
-      "silhouette": "Unarmed worker infantry. Small human silhouette. No weapon. Light gear. Carrying a toolbox/backpack.",
-      "unitId": "worker_v0",
-      "version": "unit_art_v0"
-    }
-  ],
+  "version": "unit_registry_v0",
+  "generatedFrom": "core/data/units/*.json",
+  "count": 2,
   "units": [
     {
+      "version": "unit_v0",
+      "unitId": "rifleman",
+      "name": "Rifleman",
       "class": "INFANTRY",
-      "combat": {
-        "damage": 8,
-        "maxHp": 100,
-        "range": 6
-      },
       "cost": {
         "credits": 100,
         "timeTicks": 120
       },
+      "combat": {
+        "maxHp": 100,
+        "damage": 8,
+        "range": 6
+      },
       "move": {
         "speed": 5
-      },
-      "name": "Rifleman",
-      "unitId": "rifleman",
-      "version": "unit_v0"
+      }
     },
     {
+      "version": "unit_v0",
+      "unitId": "worker_v0",
+      "name": "Worker",
       "class": "INFANTRY",
-      "combat": {
-        "damage": 0,
-        "maxHp": 100,
-        "range": 0
-      },
       "cost": {
         "credits": 200,
         "timeTicks": 60
       },
+      "combat": {
+        "maxHp": 100,
+        "damage": 0,
+        "range": 0
+      },
       "move": {
         "speed": 5
-      },
-      "name": "Worker",
-      "unitId": "worker_v0",
-      "version": "unit_v0"
+      }
     }
-  ],
-  "version": "unit_registry_v0"
+  ]
 }
