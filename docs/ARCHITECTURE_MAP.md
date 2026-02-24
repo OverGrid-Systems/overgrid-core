@@ -1,7 +1,6 @@
 # OverGrid III — Architecture Map (Code-Linked)
 
 <!-- AUTOGEN_ARCHITECTURE_MAP_V1_START -->
-
 ## @DOC Index (extracted)
 - Deterministic Simulation Core (sim_v1) — core/sim_v1.cjs
   - guarantee: deterministic replay

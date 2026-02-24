@@ -1,7 +1,6 @@
 # OverGrid III: Global Command — Current System State (Deterministic Core + Dev Authority Server)
 
 <!-- AUTOGEN_CURRENT_SYSTEM_STATE_V1_START -->
-
 ## @DOC Index (extracted)
 - Deterministic Simulation Core (sim_v1) — core/sim_v1.cjs
   - guarantee: deterministic replay

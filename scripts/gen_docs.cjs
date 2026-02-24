@@ -3,16 +3,19 @@ function injectAutogenBlock(filePath, startMarker, endMarker, block){
   const fs = require("fs");
   if(!fs.existsSync(filePath)) throw new Error("MISSING_DOC: " + filePath);
 
-  const src = fs.readFileSync(filePath,"utf8");
+  const src = fs.readFileSync(filePath, "utf8");
   if(!src.includes(startMarker) || !src.includes(endMarker)){
     throw new Error("AUTOGEN markers missing in " + filePath);
   }
 
   const before = src.split(startMarker)[0] + startMarker + "\n";
-  const after  = "\n" + endMarker + src.split(endMarker)[1];
-  const out = (before + block.trimEnd() + after).replace(/\n{3,}/g,"\n\n");
+  const after  = endMarker + src.split(endMarker)[1];
 
-  fs.writeFileSync(filePath, out, "utf8");
+  // - No leading blank lines
+  // - Exactly one trailing newline
+  const clean = String(block).replace(/^\n+/, "").replace(/\n+$/, "\n");
+
+  fs.writeFileSync(filePath, before + clean + after, "utf8");
 }
 
 "use strict";
@@ -29,8 +32,6 @@ const SOURCES = [
   "scripts/ci_tamper_test.sh",
 ];
 
-const START = "";
-const END   = "";
 
 function read(rel){ return fs.readFileSync(path.join(ROOT, rel), "utf8"); }
 function exists(rel){ return fs.existsSync(path.join(ROOT, rel)); }
@@ -66,13 +67,14 @@ function parseYamlish(body){
 }
 
 function buildAutogenSection(parsed){
-
   const L = [];
-  L.push(START);  L.push("");
   L.push("## @DOC Index (extracted)");
+
   if(!parsed.length){
-    L.push("- (none found) — add /* @DOC ... @end */ blocks to source files");    return L.join("\n") + "\n";
+    L.push("- (none found) — add /* @DOC ... @end */ blocks to source files");
+    return L.join("\n") + "\n";
   }
+
   for(const p of parsed){
     L.push(`- ${p.title || "(untitled)"} — ${p.rel}`);
     if(Array.isArray(p.guarantees) && p.guarantees.length){
@@ -87,7 +89,9 @@ function buildAutogenSection(parsed){
     if(Array.isArray(p.notes) && p.notes.length){
       for(const n of p.notes) L.push(`  - note: ${n}`);
     }
-  }  return L.join("\n") + "\n";
+  }
+
+  return L.join("\n") + "\n";
 }
 
 function patchFile(relPath, autogenBlock){
