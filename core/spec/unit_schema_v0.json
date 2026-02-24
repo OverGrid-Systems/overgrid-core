@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "unit_schema_v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version","unitId","name","class","cost","combat","move"],
+  "properties": {
+    "version": { "const": "unit_v0" },
+    "unitId": { "type":"string", "pattern":"^[a-z0-9_]{3,64}$" },
+    "name": { "type":"string", "minLength": 1, "maxLength": 80 },
+    "class": { "type":"string", "enum":["INFANTRY","LIGHT_VEHICLE","HEAVY_VEHICLE","AIR"] },
+    "cost": {
+      "type":"object",
+      "additionalProperties": false,
+      "required":["credits","timeTicks"],
+      "properties": {
+        "credits": { "type":"integer", "minimum": 0, "maximum": 1000000 },
+        "timeTicks": { "type":"integer", "minimum": 1, "maximum": 1000000 }
+      }
+    },
+    "combat": {
+      "type":"object",
+      "additionalProperties": false,
+      "required":["maxHp","damage","range"],
+      "properties": {
+        "maxHp": { "type":"integer", "minimum": 1, "maximum": 1000000 },
+        "damage": { "type":"integer", "minimum": 0, "maximum": 1000000 },
+        "range": { "type":"integer", "minimum": 0, "maximum": 1000000 }
+      }
+    },
+    "move": {
+      "type":"object",
+      "additionalProperties": false,
+      "required":["speed"],
+      "properties": {
+        "speed": { "type":"integer", "minimum": 0, "maximum": 1000000 }
+      }
+    }
+  }
+}

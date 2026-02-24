@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "unit_art_schema_v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version","unitId","silhouette","iconCue"],
+  "properties": {
+    "version": { "const": "unit_art_v0" },
+    "unitId": { "type":"string", "pattern":"^[a-z0-9_]{3,64}$" },
+    "silhouette": { "type":"string", "minLength": 1, "maxLength": 500 },
+    "iconCue": { "type":"string", "minLength": 1, "maxLength": 300 }
+  }
+}
