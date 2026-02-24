@@ -35,4 +35,6 @@ bash scripts/ci_verify_unit_registry_v0.sh
 
 bash scripts/ci_rts_unit_stats_registry_v0_smoke.sh
 
+bash scripts/ci_rts_kind_mapping_v0.sh
+
 echo "OK_CI_ALL"
