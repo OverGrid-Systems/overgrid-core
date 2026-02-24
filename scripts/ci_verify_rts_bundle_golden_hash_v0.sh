@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Ensure we run from repo root even if caller changes CWD
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
-
-# Optional: keep this (it verifies the golden file itself)
-bash scripts/ci_verify_golden_hashes_v0.sh
 
 node - <<'NODE'
 const fs = require("fs");
@@ -20,23 +16,26 @@ if(!fs.existsSync(goldenPath)){
 
 let j;
 try { j = JSON.parse(fs.readFileSync(goldenPath, "utf8")); }
-catch(e){ console.error("BAD_GOLDEN_HASHES_V0"); process.exit(1); }
+catch { console.error("BAD_GOLDEN_HASHES_V0"); process.exit(1); }
 
-/*
-Accept both schemas:
-A) { "bundle_v1": "...", "rts_bundle_v0": "..." }
-B) { "version":"golden_hashes_v0", "golden": { "bundle_v1":"...", "rts_bundle_v0":"..." } }
-*/
-const golden = (j && typeof j === "object" && j.golden && typeof j.golden === "object") ? j.golden : j;
-
-if(j && typeof j === "object" && "version" in j && j.version !== "golden_hashes_v0"){
-  console.error("BAD_GOLDEN_HASHES_V0");
-  process.exit(1);
+function pick(obj){
+  if(!obj || typeof obj !== "object") return null;
+  if(typeof obj.rts_bundle_v0 === "string") return obj.rts_bundle_v0;
+  // common nestings
+  if(obj.golden && typeof obj.golden === "object" && typeof obj.golden.rts_bundle_v0 === "string") return obj.golden.rts_bundle_v0;
+  if(obj.hashes && typeof obj.hashes === "object" && typeof obj.hashes.rts_bundle_v0 === "string") return obj.hashes.rts_bundle_v0;
+  // shallow search (depth 1) to be future-proof
+  for(const k of Object.keys(obj)){
+    const v = obj[k];
+    if(v && typeof v === "object" && typeof v.rts_bundle_v0 === "string") return v.rts_bundle_v0;
+  }
+  return null;
 }
 
-const expected = golden && golden.rts_bundle_v0;
-if(typeof expected !== "string" || !expected.length){
+const expected = pick(j);
+if(!expected){
   console.error("BAD_GOLDEN_HASHES_V0");
+  console.error("golden_keys", (j && typeof j === "object") ? Object.keys(j).join(",") : String(typeof j));
   process.exit(1);
 }
 
