@@ -1,0 +1,13 @@
+{
+  "version": "unit_art_registry_v0",
+  "generatedFrom": "core/data/unit_art/*.json",
+  "count": 1,
+  "unitArt": [
+    {
+      "version": "unit_art_v0",
+      "unitId": "rifleman",
+      "silhouette": "Humanoid with rifle + small backpack; readable helmet outline; weapon held forward.",
+      "iconCue": "Top-down/3-4 view: rifle shape dominates; helmet + shoulders block; minimal internal detail."
+    }
+  ]
+}
