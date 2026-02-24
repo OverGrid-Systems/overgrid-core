@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# ---- REGISTRY DRIFT PROTECTION (V0) ----
+scripts/build_all_registries_v0.sh
 
+git diff --exit-code core/dist core/spec/unit_registry_hash_v0.json core/spec/unit_art_registry_hash_v0.json || {
+  echo "DRIFT_DETECTED: registries / hash locks out of sync (run scripts/build_all_registries_v0.sh and commit outputs)"
+  exit 1
+}
+# -----------------------------------------
 node -c core/sim_v1.cjs
 node core/sim_v1.cjs >/dev/null
 
