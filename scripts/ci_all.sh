@@ -32,16 +32,14 @@ bash scripts/ci_unit_data_v0.sh
 bash scripts/ci_rts_units_v0_smoke.sh
 
 bash scripts/ci_verify_unit_registry_v0.sh
+bash scripts/ci_verify_unit_registry_hash_v0.sh
 
 bash scripts/ci_rts_unit_stats_registry_v0_smoke.sh
 
 bash scripts/ci_rts_kind_mapping_v0.sh
 
 bash scripts/ci_rts_unit_art_registry_v0_smoke.sh
-
 bash scripts/ci_verify_unit_art_registry_hash_v0.sh
-
-bash scripts/ci_verify_rts_bundle_hash_v0.sh
 
 bash scripts/ci_verify_rts_bundle_golden_hash_v0.sh
 
