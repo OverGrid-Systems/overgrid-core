@@ -33,7 +33,7 @@ This repo is intentionally "hard to change". The purpose is deterministic replay
 ## 6) LOCKS.md Hash Lock (v1)
 - locks_md_hash_v1
   - file: `docs/LOCKS.md`
-  - sha256: `c7c6ce388e94d31159b255bc0461a435f1069b046ad3a571c97e88e7be189d38`
+  - sha256: `ae19ac29fb7478073e10b764726a85573be15a16653d1732a870f095646ddb3d`
 
 ## 7) Event Surface Contract Lock (v1)
 - event_surface_hash_v1

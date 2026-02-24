@@ -118,3 +118,4 @@ main();
 
 // AUTOGEN: LOCKS.md
 require("child_process").execSync("node scripts/gen_locks_md_v1.cjs",{stdio:"inherit"});
+require("child_process").execSync("node scripts/gen_locks_md_hash_v1.cjs",{stdio:"inherit"});
