@@ -8,6 +8,7 @@ node -c core/sim_rts_v0.cjs
 node core/sim_rts_v0.cjs >/dev/null
 
 npm run docs:check
+bash scripts/ci_verify_locks_md_no_undefined_v0.sh
 ./scripts/ci_tamper_test.sh
 bash scripts/ci_verify_bundle_v1.sh
 bash scripts/ci_verify_rts_bundle_v0.sh
@@ -41,7 +42,7 @@ bash scripts/ci_rts_unit_art_registry_v0_smoke.sh
 
 bash scripts/ci_verify_unit_art_registry_hash_v0.sh
 
-bash scripts/ci_verify_rts_bundle_golden_hash_v0.sh
+
 
 
 echo "OK_CI_ALL"

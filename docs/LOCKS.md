@@ -28,7 +28,7 @@ This repo is intentionally "hard to change". The purpose is deterministic replay
 ## 5) Simulation Contract Lock (v1)
 - sim_contract_hash_v1
   - file: `core/spec/sim_spec_v1.md`
-  - sha256: `undefined`
+  - sha256: `3db892b117ce3e9b866e33bfe23a1c675cd9b19012a3c328e38bf5efdcdf0333`
 
 ## 6) LOCKS.md Hash Lock (v1)
 - Source of truth: `core/spec/locks_md_hash_v1.json`
