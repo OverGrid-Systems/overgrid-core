@@ -3,16 +3,19 @@ function injectAutogenBlock(filePath, startMarker, endMarker, block){
   const fs = require("fs");
   if(!fs.existsSync(filePath)) throw new Error("MISSING_DOC: " + filePath);
 
-  const src = fs.readFileSync(filePath,"utf8");
+  const src = fs.readFileSync(filePath, "utf8");
   if(!src.includes(startMarker) || !src.includes(endMarker)){
     throw new Error("AUTOGEN markers missing in " + filePath);
   }
 
   const before = src.split(startMarker)[0] + startMarker + "\n";
-  const after  = "\n" + endMarker + src.split(endMarker)[1];
-  const out = (before + block.trimEnd() + after).replace(/\n{3,}/g,"\n\n");
+  const after  = endMarker + src.split(endMarker)[1];
 
-  fs.writeFileSync(filePath, out, "utf8");
+  // - No leading blank lines
+  // - Exactly one trailing newline
+  const clean = String(block).replace(/^\n+/, "").replace(/\n+$/, "\n");
+
+  fs.writeFileSync(filePath, before + clean + after, "utf8");
 }
 
 "use strict";
