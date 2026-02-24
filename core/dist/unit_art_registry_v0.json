@@ -1,19 +1,19 @@
 {
-  "version": "unit_art_registry_v0",
-  "generatedFrom": "core/data/unit_art/*.json",
   "count": 2,
+  "generatedFrom": "core/data/unit_art/*.json",
   "unitArt": [
     {
-      "version": "unit_art_v0",
-      "unitId": "rifleman",
+      "iconCue": "Top-down/3-4 view: rifle shape dominates; helmet + shoulders block; minimal internal detail.",
       "silhouette": "Humanoid with rifle + small backpack; readable helmet outline; weapon held forward.",
-      "iconCue": "Top-down/3-4 view: rifle shape dominates; helmet + shoulders block; minimal internal detail."
+      "unitId": "rifleman",
+      "version": "unit_art_v0"
     },
     {
-      "version": "unit_art_v0",
-      "unitId": "worker_v0",
+      "iconCue": "Hard hat + wrench icon cue. Simple yellow helmet shape. Non-combat role.",
       "silhouette": "Unarmed worker infantry. Small human silhouette. No weapon. Light gear. Carrying a toolbox/backpack.",
-      "iconCue": "Hard hat + wrench icon cue. Simple yellow helmet shape. Non-combat role."
+      "unitId": "worker_v0",
+      "version": "unit_art_v0"
     }
-  ]
+  ],
+  "version": "unit_art_registry_v0"
 }
