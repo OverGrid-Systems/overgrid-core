@@ -41,4 +41,6 @@ bash scripts/ci_rts_unit_art_registry_v0_smoke.sh
 
 bash scripts/ci_verify_unit_art_registry_hash_v0.sh
 
+bash scripts/ci_verify_unit_registry_hash_v0.sh
+
 echo "OK_CI_ALL"
