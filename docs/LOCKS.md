@@ -30,12 +30,7 @@ This repo is intentionally "hard to change". The purpose is deterministic replay
   - file: `core/spec/sim_spec_v1.md`
   - sha256: `undefined`
 
-## 6) LOCKS.md Hash Lock (v1)
-- locks_md_hash_v1
-  - file: `docs/LOCKS.md`
-  - sha256: `ae19ac29fb7478073e10b764726a85573be15a16653d1732a870f095646ddb3d`
-
-## 7) Event Surface Contract Lock (v1)
+## 6) Event Surface Contract Lock (v1)
 - event_surface_hash_v1
   - file: `core/spec/event_surface_v1.md`
   - sha256: `24ef2da03410f1040df0fc443cba0191dbf148101b0586b8032e598961f4edcb`
