@@ -18,24 +18,26 @@ let j;
 try { j = JSON.parse(fs.readFileSync(goldenPath, "utf8")); }
 catch { console.error("BAD_GOLDEN_HASHES_V0"); process.exit(1); }
 
-function pick(obj){
-  if(!obj || typeof obj !== "object") return null;
-  if(typeof obj.rts_bundle_v0 === "string") return obj.rts_bundle_v0;
-  // common nestings
-  if(obj.golden && typeof obj.golden === "object" && typeof obj.golden.rts_bundle_v0 === "string") return obj.golden.rts_bundle_v0;
-  if(obj.hashes && typeof obj.hashes === "object" && typeof obj.hashes.rts_bundle_v0 === "string") return obj.hashes.rts_bundle_v0;
-  // shallow search (depth 1) to be future-proof
-  for(const k of Object.keys(obj)){
-    const v = obj[k];
-    if(v && typeof v === "object" && typeof v.rts_bundle_v0 === "string") return v.rts_bundle_v0;
+const keys = (j && typeof j === "object") ? Object.keys(j) : [];
+function asHash(v){
+  if(typeof v === "string") return v;
+  if(v && typeof v === "object"){
+    for (const k of ["sha256","hash","value","expected","hex"]) {
+      if(typeof v[k] === "string") return v[k];
+    }
   }
   return null;
 }
 
-const expected = pick(j);
+let expected = asHash(j?.rts_bundle_v0)
+  ?? asHash(j?.golden?.rts_bundle_v0)
+  ?? asHash(j?.hashes?.rts_bundle_v0);
+
 if(!expected){
   console.error("BAD_GOLDEN_HASHES_V0");
-  console.error("golden_keys", (j && typeof j === "object") ? Object.keys(j).join(",") : String(typeof j));
+  console.error("golden_keys", keys.join(",") || "<none>");
+  console.error("rts_bundle_v0_type", typeof (j && j.rts_bundle_v0));
+  console.error("rts_bundle_v0_value", JSON.stringify(j && j.rts_bundle_v0));
   process.exit(1);
 }
 
