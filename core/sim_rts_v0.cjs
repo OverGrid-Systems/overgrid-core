@@ -777,5 +777,9 @@ run();
 if (process.env.RTS_UNITS_V0 === "1") {
   const units = loadUnitsV0();
   console.log("OK_RTS_UNITS_V0_LOADED", units.size);
+}\n
+if (process.env.RTS_USE_UNIT_REGISTRY_V0 === "1") {
+  const reg = loadUnitRegistryV0();
+  console.log("OK_RTS_UNIT_REGISTRY_V0_LOADED", reg ? reg.size : 0);
 }
-
+\n

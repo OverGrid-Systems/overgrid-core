@@ -21,3 +21,19 @@ function loadUnitsV0(){
 }
 
 module.exports = { loadUnitsV0 };
+
+function loadUnitRegistryV0(){
+  const p = "core/dist/unit_registry_v0.json";
+  if(!fs.existsSync(p)) return null;
+  const reg = readJson(p);
+  if(!reg || reg.version !== "unit_registry_v0" || !Array.isArray(reg.units)) return null;
+
+  const out = new Map();
+  for(const u of reg.units){
+    if(!u || u.version !== "unit_v0") continue;
+    out.set(u.unitId, u);
+  }
+  return out;
+}
+
+module.exports.loadUnitRegistryV0 = loadUnitRegistryV0;
