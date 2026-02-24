@@ -20,7 +20,7 @@ while IFS= read -r line; do
     continue
   fi
 
-  actual="$(shasum -a 256 "$path" | awk '{print $1}')"
+  actual="$(node -e 'const fs=require("fs");const crypto=require("crypto");const p=process.argv[1];process.stdout.write(crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex"));' "$path")"
   if [[ "$actual" != "$sha" ]]; then
     echo "IDENTITY_LOCK_MISMATCH $path"
     echo "EXPECTED $sha"
