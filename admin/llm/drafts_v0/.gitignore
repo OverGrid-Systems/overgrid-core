@@ -1,0 +1,7 @@
+# Draft instances are local-only artifacts.
+# Keep folder structure, but never commit drafts.
+d_*.json
+*.json
+!.gitignore
+!.gitkeep
+!README.md
