@@ -23,6 +23,7 @@ const sim = readJson(must("core/spec/sim_contract_hash_v1.json"));
 const rts = readJson(must("core/spec/contract_hash_v0.json"));
 const ev  = readJson(must("core/spec/event_surface_hash_v1.json"));
 const admin = readJson(must("core/spec/admin_api_hash_v0.json"));
+const mass  = readJson(must("core/spec/mass_sim_hash_v0.json"));
 
 const GOLDEN_BUNDLE_V1   = "686988bfaa1ed12131647fa3161d8bdb4590863d83c66ec0fdb7ad65daf87769";
 const GOLDEN_RTS_BUNDLE_V0 = "1256e1d0687090b1b9e8d6421212c9f02f48fd56262bfe7be68b5e8c62ccb445";
