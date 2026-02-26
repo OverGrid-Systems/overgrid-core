@@ -6,6 +6,7 @@ const draftsDir = 'admin/llm/drafts_v0';
 const decisionsDir = 'admin/llm/decisions_v0';
 
 const drafts = fs.readdirSync(draftsDir).filter(f => f.endsWith('.json'));
+
 let decisionMap = {};
 if (fs.existsSync(decisionsDir)) {
   fs.readdirSync(decisionsDir).forEach(file => {
