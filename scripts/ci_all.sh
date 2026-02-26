@@ -56,4 +56,6 @@ bash scripts/ci_verify_admin_api_hash_v0.sh
 
 bash scripts/ci_verify_mass_sim_hash_v0.sh
 
+bash scripts/ci_verify_llm_admin_layer_v0.sh
+
 echo "OK_CI_ALL"
