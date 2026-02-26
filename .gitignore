@@ -19,3 +19,6 @@ dist_golden_bundle_v1.zip.sha256
 
 # local git hooks
 .githooks/
+
+# local-only
+ci_failed.log
