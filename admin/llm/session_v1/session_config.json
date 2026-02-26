@@ -1,0 +1,15 @@
+{
+  "version": "session_v1",
+  "project": "OverGrid Third Generation",
+  "mode": "draft_only",
+  "model": "gpt-5.2",
+  "safety": {
+    "requiresHumanApproval": true,
+    "noDirectExecution": true,
+    "noSecretsInPrompts": true
+  },
+  "paths": {
+    "draftsDir": "admin/llm/drafts_v0",
+    "archiveDir": "admin/ui/archive_v0"
+  }
+}
