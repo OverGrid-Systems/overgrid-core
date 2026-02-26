@@ -1,0 +1,9 @@
+{
+  "version": "LLM_DRAFT_V0",
+  "draftId": "d_d939dc1dbb22402c",
+  "createdAt": "2026-02-26T10:06:31.415Z",
+  "source": "llm",
+  "intent": "create a safe draft pipeline skeleton",
+  "commands": [],
+  "notes": "Draft only. Must be validated + approved before commit."
+}
