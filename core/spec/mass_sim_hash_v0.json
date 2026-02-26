@@ -1,0 +1,12 @@
+{
+  "version": "mass_sim_hash_v0",
+  "files": [
+    "core/spec/mass_sim_v0/budget_policy_v0.md",
+    "core/spec/mass_sim_v0/combat_envelope_v0.md",
+    "core/spec/mass_sim_v0/interest_bubble_v0.md",
+    "core/spec/mass_sim_v0/promotion_events_v0.md",
+    "core/spec/mass_sim_v0/recon_contract_v0.md",
+    "core/spec/mass_sim_v0/tier_model_v0.md"
+  ],
+  "sha256": "d2cc961ba9d716cd6a7cd29c0ee6997b5b6b05233ffedb03eeff42b1db4d47be"
+}
