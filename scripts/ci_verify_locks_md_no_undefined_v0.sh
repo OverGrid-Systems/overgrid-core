@@ -4,18 +4,26 @@ set -euo pipefail
 FILE="docs/LOCKS.md"
 test -f "$FILE" || { echo "MISSING_LOCKS_MD"; exit 1; }
 
-# ممنوع undefined نهائياً
-if rg -n "\bundefined\b" "$FILE" >/dev/null; then
-  echo "BAD_LOCKS_MD_UNDEFINED"
-node -e 'const fs=require("fs"); const s=fs.readFileSync("docs/LOCKS.md","utf8"); if(s.includes("`undefined`")){ console.error("BAD_STILL_UNDEFINED"); process.exit(1);} console.log("OK_NO_UNDEFINED");'
-  exit 1
-fi
+# ممنوع undefined نهائياً (cross-platform)
+node - <<'NODE'
+const fs = require("fs");
+const s = fs.readFileSync("docs/LOCKS.md","utf8");
 
-# ممنوع أي سطر hash منتهي بـ ":" أو قيمة فاضية (heuristic قوي)
-if rg -n "^[a-z0-9_]+:\s*$" "$FILE" >/dev/null; then
-  echo "BAD_LOCKS_MD_EMPTY_VALUE"
-node -e 'const fs=require("fs"); const s=fs.readFileSync("docs/LOCKS.md","utf8"); if(s.includes("`undefined`")){ console.error("BAD_STILL_UNDEFINED"); process.exit(1);} console.log("OK_NO_UNDEFINED");'
-  exit 1
-fi
+if (/\bundefined\b/.test(s)) {
+  console.error("BAD_LOCKS_MD_UNDEFINED");
+  // اطبع سطور فيها undefined للمساعدة
+  const lines = s.split(/\r?\n/);
+  lines.forEach((ln,i)=>{ if(/\bundefined\b/.test(ln)) console.error(`${i+1}:${ln}`); });
+  process.exit(1);
+}
 
-echo "OK_LOCKS_MD_NO_UNDEFINED_V0"
+// ممنوع أي سطر hash منتهي بـ ":" أو قيمة فاضية (heuristic قوي)
+if (/^[a-z0-9_]+:\s*$/m.test(s)) {
+  console.error("BAD_LOCKS_MD_EMPTY_VALUE");
+  const lines = s.split(/\r?\n/);
+  lines.forEach((ln,i)=>{ if(/^[a-z0-9_]+:\s*$/.test(ln)) console.error(`${i+1}:${ln}`); });
+  process.exit(1);
+}
+
+console.log("OK_LOCKS_MD_NO_UNDEFINED_V0");
+NODE
