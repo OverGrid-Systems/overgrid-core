@@ -52,4 +52,6 @@ bash scripts/ci_verify_unit_art_registry_hash_v0.sh
 
 
 
+bash scripts/ci_verify_admin_api_hash_v0.sh
+
 echo "OK_CI_ALL"
