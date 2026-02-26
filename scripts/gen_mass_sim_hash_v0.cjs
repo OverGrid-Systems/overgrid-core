@@ -33,8 +33,9 @@ files.sort();
   const hashes = [];
 
   for(const f of files){
-    const content = fs.readFileSync(f);
-    hashes.push(sha256(content));
+    let content = fs.readFileSync(f, "utf8");
+    content = content.replace(/\r\n/g, "\n");
+    hashes.push(sha256(Buffer.from(content, "utf8")));
   }
 
   const combined = sha256(Buffer.from(hashes.join("\n"), "utf8"));
