@@ -29,6 +29,7 @@ function main(){
   if(!fs.existsSync(baseDir)) throw new Error("MISSING mass_sim_v0: " + baseDir);
 
   const files = walk(baseDir);
+files.sort();
   const hashes = [];
 
   for(const f of files){
