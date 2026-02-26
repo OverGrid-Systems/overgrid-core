@@ -1,0 +1,23 @@
+{
+  "version": "llm_draft_v0",
+  "id": "d_5cb4345599007fc729d3",
+  "createdAt": "2026-02-26T10:41:19.190Z",
+  "intent": "docs",
+  "target": "core/spec/mass_sim_v0/llm_admin_control_surface_v0.md",
+  "proposal": {
+    "summary": "DRAFT ONLY — fill in proposal details",
+    "changes": []
+  },
+  "constraints": {
+    "deterministic": true,
+    "draftOnly": true,
+    "requiresHumanApproval": true
+  },
+  "provenance": {
+    "source": "human",
+    "model": "n/a",
+    "promptHash": "unknown",
+    "inputHash": "unknown",
+    "outputHash": "bcf6e66e8e23eacf6b70e93f42877df44529b3a0efd534c0f714a28dbd071dca"
+  }
+}
