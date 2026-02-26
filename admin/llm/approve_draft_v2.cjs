@@ -17,7 +17,7 @@ const target = draft.target || '';
 const summary = (draft.proposal && draft.proposal.summary) ? String(draft.proposal.summary) : 'approve draft';
 
 // 1) تحقق من المسودة (استخدم ./validate_draft_v0.cjs)
-const validator = './validate_draft_v0.cjs';
+const validator = 'admin/llm/validate_draft_v0.cjs';
 const v = spawnSync('node', [validator, draftPath], { stdio: 'inherit' });
 if (v.status !== 0) die('ERR_DRAFT_VALIDATE_FAILED');
 
