@@ -28,6 +28,33 @@ function readLastTickFromDevEnvelopes(pth){
     return Number.isFinite(t) ? t : null;
   }catch(_){ return null; }
 }
+// === SIM ENV (dev envelopes aware) ===
+const SIM_ENV = (() => {
+  try{
+    const auto = require("path").join(ROOT,"dev_state","envelopes.dev.json");
+    const eff = (process.env.DEV_ENVELOPES_PATH && String(process.env.DEV_ENVELOPES_PATH).trim())
+      ? String(process.env.DEV_ENVELOPES_PATH).trim()
+      : (fs.existsSync(auto) ? auto : null);
+
+    if(!eff) return { ...process.env };
+
+    // read last tick from dev envelopes
+    let last=null;
+    try{
+      const a = JSON.parse(fs.readFileSync(eff,"utf8"));
+      if(Array.isArray(a) && a.length) last = Number(a[a.length-1].tick);
+    }catch{}
+
+    return {
+      ...process.env,
+      DEV_ENVELOPES_PATH: eff,
+      ...(Number.isFinite(last) ? { MAX_TICK: String(last) } : {})
+    };
+  }catch{
+    return { ...process.env };
+  }
+})();
+
 
 
 // === AUTO_DEV_ENVELOPES_V1 ===
@@ -53,7 +80,7 @@ const outDir = path.join(ROOT, "dev_state");
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
 const env = Object.assign({}, process.env);
-const r = spawnSync("node", ["core/sim_v1.cjs"], { encoding: "utf8", env });
+const r = spawnSync("node", ["core/sim_v1.cjs"], {encoding: "utf8", env, env: SIM_ENV });
 const stdout = r.stdout || "";
 const stderr = r.stderr || "";
 
