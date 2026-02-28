@@ -1,3 +1,37 @@
+
+// === AUTO_WARM_CHAIN_CACHE_ON_STALE_V1 ===
+// If chain cache is behind, try to warm/rebuild it once before failing the commit.
+function __tryWarmChainCacheOnce(targetMaxTick){
+  try{
+    // 1) If there is an in-process function (best case)
+    if (typeof warmChainCache === "function") { try{ warmChainCache(targetMaxTick); return true; }catch(_){} }
+    if (typeof rebuildChainCache === "function") { try{ rebuildChainCache(targetMaxTick); return true; }catch(_){} }
+    if (typeof buildChainCache === "function") { try{ buildChainCache(targetMaxTick); return true; }catch(_){} }
+
+    // 2) Otherwise try to run a repo script if it exists (common pattern)
+    const ROOT_LOCAL = (typeof ROOT !== "undefined" && ROOT) ? ROOT : process.cwd();
+    const { spawnSync } = require("child_process");
+    const path = require("path");
+
+    const candidates = [
+      "scripts/warm_chain_cache_v0.cjs",
+      "scripts/gen_chain_cache_v0.cjs",
+      "scripts/build_chain_cache_v0.cjs",
+      "scripts/gen_chain_cache_dev_v0.cjs",
+      "scripts/warm_chain_cache_dev_v0.cjs",
+    ].map(x=>path.join(ROOT_LOCAL,x));
+
+    for(const fp of candidates){
+      if(fs.existsSync(fp)){
+        const r = spawnSync("node",[fp, String(targetMaxTick)],{cwd:ROOT_LOCAL,encoding:"utf8"});
+        if(r.status===0) return true;
+      }
+    }
+  }catch(_){}
+  return false;
+}
+// === /AUTO_WARM_CHAIN_CACHE_ON_STALE_V1 ===
+
 const { spawnSync } = require('child_process');
 /* OverGrid admin dev server (CJS) — stable, no patching */
 /* @DOC
@@ -208,8 +242,24 @@ const server = http.createServer((req, res) => {
       if(!cache || !Number.isFinite(Number(cache.maxTick)) || !cache.finalChainHash)
         return sendJSON(res,{ok:false,error:"missing_chain_cache"},500);
 
-      if (Number(cache.maxTick) !== (tick - 1))
-        return sendJSON(res,{ok:false,error:"stale_chain_cache", cacheMaxTick: cache.maxTick, need: tick-1},400);
+      
+      if (Number(cache.maxTick) !== (tick - 1)) {
+        // attempt warm/rebuild once
+        __tryWarmChainCacheOnce(tick - 1);
+        const cache2 = readChainCache();
+        if(!cache2 || !Number.isFinite(Number(cache2.maxTick)) || !cache2.finalChainHash)
+          return sendJSON(res,{ok:false,error:"missing_chain_cache"},500);
+        if (Number(cache2.maxTick) !== (tick - 1))
+          return sendJSON(res,{ok:false,error:"stale_chain_cache", cacheMaxTick: cache2.maxTick, need: tick-1},400);
+
+        // replace cache with warmed cache
+        // (use warmed values below)
+        // NOTE: we keep 'cache' name by shadowing via assignment
+        // eslint-disable-next-line no-func-assign
+        cache.maxTick = cache2.maxTick;
+        cache.finalChainHash = cache2.finalChainHash;
+      }
+
 
       const prevChainHash = String(cache.finalChainHash);
       const appended = { tick, frameId, prevChainHash, commands };
