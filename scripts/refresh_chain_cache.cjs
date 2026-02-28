@@ -11,8 +11,7 @@ const ROOT = process.cwd();
 /* AUTO_DEV_ENVELOPES_PATH_V1 */
 const DEV_ENVELOPES_PATH_EFFECTIVE = (typeof DEV_ENVELOPES_PATH !== "undefined" && DEV_ENVELOPES_PATH) ? DEV_ENVELOPES_PATH : (typeof DEV_ENVELOPES_PATH_EFFECTIVE !== "undefined" ? DEV_ENVELOPES_PATH_EFFECTIVE : null);
 
-const DEV_ENVELOPES_AUTO_V1 = path.join(ROOT,"dev_state","envelopes.dev.json");
-const DEV_ENVELOPES_PATH_EFFECTIVE = fs.existsSync(DEV_ENVELOPES_AUTO) ? DEV_ENVELOPES_AUTO : null;
+const DEV_ENVELOPES_AUTO = path.join(ROOT,"dev_state","envelopes.dev.json");
 
 function readLastTickFromDevEnvelopes(pth){
   try{
