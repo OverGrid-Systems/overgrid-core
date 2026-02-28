@@ -1,3 +1,4 @@
+const { spawnSync } = require('child_process');
 /* OverGrid admin dev server (CJS) — stable, no patching */
 /* @DOC
 title: Dev Authority Server (/api/commit)
