@@ -7,6 +7,26 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const ROOT = process.cwd();
+
+// === AUTO_DEV_ENVELOPES_V1 ===
+const DEV_ENV = process.env.DEV_ENVELOPES_PATH || path.join(ROOT,"dev_state","envelopes.dev.json");
+let DEV_ENVELOPES_PATH = null;
+try{
+  if(fs.existsSync(DEV_ENV)) DEV_ENVELOPES_PATH = DEV_ENV;
+}catch(_){}
+
+function readLastTickFromDevEnvelopes(fp){
+  try{
+    const a = JSON.parse(fs.readFileSync(fp,"utf8"));
+    if(!Array.isArray(a) || !a.length) return null;
+    const t = Number(a[a.length-1].tick);
+    return Number.isFinite(t) ? t : null;
+  }catch(_){
+    return null;
+  }
+}
+// === /AUTO_DEV_ENVELOPES_V1 ===
+
 const outDir = path.join(ROOT, "dev_state");
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
