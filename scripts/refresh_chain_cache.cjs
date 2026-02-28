@@ -15,6 +15,12 @@ const DEV_ENVELOPES_PATH_EFFECTIVE =
     ? String(process.env.DEV_ENVELOPES_PATH).trim()
     : (fs.existsSync(DEV_ENVELOPES_AUTO) ? DEV_ENVELOPES_AUTO : null);
 
+const DEV_ENVELOPES_AUTO = require("path").join(ROOT,"dev_state","envelopes.dev.json");
+const DEV_ENVELOPES_PATH_EFFECTIVE =
+  (process.env.DEV_ENVELOPES_PATH && String(process.env.DEV_ENVELOPES_PATH).trim())
+    ? String(process.env.DEV_ENVELOPES_PATH).trim()
+    : (fs.existsSync(DEV_ENVELOPES_AUTO) ? DEV_ENVELOPES_AUTO : null);
+
 const DEV_ENVELOPES_AUTO = path.join(ROOT,"dev_state","envelopes.dev.json");
 
 function readLastTickFromDevEnvelopes(pth){
