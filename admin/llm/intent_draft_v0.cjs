@@ -11,7 +11,7 @@ const intent = process.argv[2];
 const draftId = process.argv[3];
 if(!intent || !draftId) die('ERR_USAGE: node admin/llm/intent_draft_v0.cjs <SIMULATE|PUBLISH_INTENT|HEAVY_RUN_INTENT> <draftId>');
 
-const allowed = new Set(['SIMULATE','PUBLISH_INTENT','HEAVY_RUN_INTENT']);
+const allowed = new Set(['SIMULATE','EXECUTE','PUBLISH_INTENT','HEAVY_RUN_INTENT']);
 if(!allowed.has(intent)) die('ERR_BAD_INTENT');
 
 const repoRoot = process.cwd();
