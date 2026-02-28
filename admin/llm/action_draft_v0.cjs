@@ -9,6 +9,15 @@ function die(msg){ console.error(msg); process.exit(1); }
 
 const action = process.argv[2];
 const draftId = process.argv[3];
+
+  // === GUARD: one decision per draft (idempotent) ===
+  const g = spawnSync("node", ["admin/llm/guard_one_decision_per_draft_v0.cjs", "admin/ui/archive_v0/archive_v0.jsonl", draftId], { cwd: ROOT || process.cwd(), encoding: "utf8" });
+  if((g.status ?? 1)!==0){
+    console.error(String(g.stderr||g.stdout||"ERR_DRAFT_ALREADY_DECIDED"));
+    process.exit(1);
+  }
+  // === /GUARD ===
+
 if(!action || !draftId) die('ERR_USAGE: node admin/llm/action_draft_v0.cjs <APPROVE|REJECT> <draftId>');
 
 const allowed = new Set(['APPROVE','REJECT']);
