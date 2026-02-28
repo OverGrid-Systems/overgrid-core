@@ -8,6 +8,20 @@ const { spawnSync } = require("child_process");
 
 const ROOT = process.cwd();
 
+/* AUTO_DEV_ENVELOPES_PATH_V1 */
+const DEV_ENVELOPES_AUTO = path.join(ROOT,"dev_state","envelopes.dev.json");
+const DEV_ENVELOPES_PATH = fs.existsSync(DEV_ENVELOPES_AUTO) ? DEV_ENVELOPES_AUTO : null;
+
+function readLastTickFromDevEnvelopes(pth){
+  try{
+    const a = JSON.parse(fs.readFileSync(pth,"utf8"));
+    if(!Array.isArray(a) || !a.length) return null;
+    const t = Number(a[a.length-1].tick);
+    return Number.isFinite(t) ? t : null;
+  }catch(_){ return null; }
+}
+
+
 // === AUTO_DEV_ENVELOPES_V1 ===
 const DEV_ENV = process.env.DEV_ENVELOPES_PATH || path.join(ROOT,"dev_state","envelopes.dev.json");
 let DEV_ENVELOPES_PATH = null;
