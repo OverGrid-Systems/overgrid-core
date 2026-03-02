@@ -97,6 +97,18 @@ function readLedger() { return readFileJson(path.join(ROOT, "ledger.json")); }
 function readInitial() { return readFileJson(path.join(ROOT, "initial.json")); }
 function readEnvelopes() { return readFileJson(path.join(ROOT, "envelopes.json")); }
 
+function computeEnvelopesMaxTick(arr){
+  try{
+    if(!Array.isArray(arr) || !arr.length) return null;
+    let m = -Infinity;
+    for(const e of arr){
+      const t = Number(e && e.tick);
+      if(Number.isFinite(t) && t > m) m = t;
+    }
+    return Number.isFinite(m) ? m : null;
+  }catch{ return null; }
+}
+
 function readMergedEnvelopes() {
   const base = readEnvelopes() || [];
   let dev = [];
@@ -112,6 +124,11 @@ function kernelMeta() {
     ok: true,
     port: PORT,
     repo: "overgrid-core",
+    envelopes: (() => {
+      const merged = readMergedEnvelopes();
+      const maxTick = computeEnvelopesMaxTick(merged);
+      return { count: Array.isArray(merged)?merged.length:0, maxTick };
+    })(),
     chainCache: cache ? { maxTick: cache.maxTick, finalChainHash: cache.finalChainHash } : null,
     devEnvelopes: fs.existsSync(DEV_ENVELOPES_AUTO)
       ? { path: "dev_state/envelopes.dev.json", bytes: fs.statSync(DEV_ENVELOPES_AUTO).size }
@@ -131,11 +148,15 @@ const server = http.createServer(async (req, res) => {
   if (method === "GET" && p === "/api/envelopes") return sendJSON(res, { ok: true, data: readEnvelopes() }, 200);
   if (method === "GET" && p === "/api/envelopes_merged") return sendJSON(res, { ok: true, data: readMergedEnvelopes() }, 200);
 
+  
   if (method === "GET" && p === "/api/verify") {
-    const r = spawnSync("node", ["verifySignedBundle.js"], { cwd: ROOT, encoding: "utf8" });
-    if (r.status !== 0) return sendJSON(res, { ok: false, error: "VERIFY_FAILED", stderr: (r.stderr || "").slice(0, 4000) }, 500);
-    return sendJSON(res, { ok: true, stdout: (r.stdout || "").trim() }, 200);
+    // Use the same verification path as CI (bundle + tamper tests)
+    const r = spawnSync("bash", ["scripts/ci_verify_bundle_v1.sh"], { cwd: ROOT, encoding: "utf8" });
+    const out = String((r.stdout||"") + (r.stderr||"")).slice(0, 20000);
+    if (r.status !== 0) return sendJSON(res, { ok:false, error:"VERIFY_FAILED", exitCode:r.status, stderr: out }, 500);
+    return sendJSON(res, { ok:true, exitCode:0, output: out }, 200);
   }
+
 
   if (method === "POST" && p === "/api/commit") {
     const body = await readBody(req);
