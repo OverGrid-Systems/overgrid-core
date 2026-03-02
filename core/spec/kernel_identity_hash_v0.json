@@ -1,0 +1,7 @@
+{
+  "version": "kernel_identity_hash_v0",
+  "inputs": [
+    "core/spec/kernel_identity_spec_v0.md"
+  ],
+  "expectedSha256": "15252474014ddac9def436064e46a1acf271cdadd8e37a1c8c00aabbd518ae86"
+}

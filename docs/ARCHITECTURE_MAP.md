@@ -12,6 +12,7 @@
 - Dev Authority Server (/api/commit) — scripts/dev_admin_server.cjs
   - note: adds one-shot warm of chain cache when stale_chain_cache is detected
   - note: never executes LLM output; only commits envelopes
+  - note: exposes kernel identity in /api/meta (stable fields only)
 <!-- AUTOGEN_ARCHITECTURE_MAP_V1_END -->
 
 This document maps architectural concepts directly to repository files.
