@@ -47,6 +47,7 @@ ${shaLine("contract_hash_v0", "core/spec/rts_command_spec_v0.md + rts_command_ty
 
 ## 5) Simulation Contract Lock (v1)
 ${shaLine("sim_contract_hash_v1", sim.file || "core/spec/sim_spec_v1.md", pickSha(sim)).trimEnd()}
+${shaLine("command_surface_hash_v0", "core/spec/command_surface_v0.json", pickSha(readJson(must("core/spec/command_surface_hash_v0.json")))).trimEnd()}
 
 ## 6) LOCKS.md Hash Lock (v1)
 - Source of truth: \`core/spec/locks_md_hash_v1.json\`
