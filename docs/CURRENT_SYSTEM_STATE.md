@@ -10,11 +10,8 @@
   - output: per-tick stateHash + chainHash (internal)
   - note: DEV_ENVELOPES_PATH overrides envelope source for tests
 - Dev Authority Server (/api/commit) — scripts/dev_admin_server.cjs
-  - guarantee: rejects non-monotonic tick
-  - guarantee: rejects duplicate frameId
-  - guarantee: prevChainHash continuity enforced via chain cache
-  - input: POST /api/commit {tick, frameId, commands[]}
-  - output: dev_state/envelopes.dev.json append-only (local)
+  - note: adds one-shot warm of chain cache when stale_chain_cache is detected
+  - note: never executes LLM output; only commits envelopes
 <!-- AUTOGEN_CURRENT_SYSTEM_STATE_V1_END -->
 
 This document describes what exists in the repository *now*, what is enforced, and what is explicitly out of scope.
