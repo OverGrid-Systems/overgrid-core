@@ -282,6 +282,6 @@ const server = http.createServer(async (req, res) => {
   return sendJSON(res, { ok: false, error: "NOT_FOUND", path: p }, 404);
 });
 
-server.listen(PORT, "127.0.0.1", () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`OK_DEV_ADMIN_SERVER port=${PORT}`);
 });
