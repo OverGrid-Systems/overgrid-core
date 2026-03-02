@@ -1,295 +1,198 @@
+#!/usr/bin/env node
+/* OverGrid admin dev server (CJS) — stable, no patching */
+/* @DOC
+title: Dev Authority Server (/api/commit)
+notes:
+- adds one-shot warm of chain cache when stale_chain_cache is detected
+- never executes LLM output; only commits envelopes
+@end */
 
-// === AUTO_WARM_CHAIN_CACHE_ON_STALE_V1 ===
-// If chain cache is behind, try to warm/rebuild it once before failing the commit.
-function __tryWarmChainCacheOnce(targetMaxTick){
-  try{
-    // 1) If there is an in-process function (best case)
-    if (typeof warmChainCache === "function") { try{ warmChainCache(targetMaxTick); return true; }catch(_){} }
-    if (typeof rebuildChainCache === "function") { try{ rebuildChainCache(targetMaxTick); return true; }catch(_){} }
-    if (typeof buildChainCache === "function") { try{ buildChainCache(targetMaxTick); return true; }catch(_){} }
+const http = require("http");
+const url = require("url");
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
 
-    // 2) Otherwise try to run a repo script if it exists (common pattern)
-    const ROOT_LOCAL = (typeof ROOT !== "undefined" && ROOT) ? ROOT : process.cwd();
-    const { spawnSync } = require("child_process");
-    const path = require("path");
+const ROOT = process.cwd();
+const DEV_STATE_DIR = path.join(ROOT, "dev_state");
+const CHAIN_CACHE = path.join(DEV_STATE_DIR, "chain_cache.json");
+const DEV_ENVELOPES_AUTO = path.join(DEV_STATE_DIR, "envelopes.dev.json");
 
+function sendJSON(res, obj, code = 200) {
+  const body = JSON.stringify(obj, null, 2);
+  res.writeHead(code, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+  });
+  res.end(body);
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let b = "";
+    req.on("data", (c) => (b += c));
+    req.on("end", () => resolve(b));
+    req.on("error", reject);
+  });
+}
+
+function safeJsonParse(s) {
+  try { return JSON.parse(s); } catch { return null; }
+}
+
+function readChainCache() {
+  try {
+    if (!fs.existsSync(CHAIN_CACHE)) return null;
+    return JSON.parse(fs.readFileSync(CHAIN_CACHE, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * One-shot attempt to warm/rebuild chain cache.
+ * Policy: best-effort only; never throws; never loops; never blocks long.
+ */
+function tryWarmChainCacheOnce(targetMaxTick) {
+  try {
     const candidates = [
+      "scripts/refresh_chain_cache.cjs",
       "scripts/warm_chain_cache_v0.cjs",
       "scripts/gen_chain_cache_v0.cjs",
       "scripts/build_chain_cache_v0.cjs",
       "scripts/gen_chain_cache_dev_v0.cjs",
       "scripts/warm_chain_cache_dev_v0.cjs",
-    ].map(x=>path.join(ROOT_LOCAL,x));
+    ].map((x) => path.join(ROOT, x));
 
-    for(const fp of candidates){
-      if(fs.existsSync(fp)){
-        const r = spawnSync("node",[fp, String(targetMaxTick)],{cwd:ROOT_LOCAL,encoding:"utf8"});
-        if(r.status===0) return true;
-      }
+    for (const fp of candidates) {
+      if (!fs.existsSync(fp)) continue;
+
+      const args = fp.endsWith(path.join("scripts","refresh_chain_cache.cjs"))
+        ? []
+        : [String(targetMaxTick)];
+
+      const r = spawnSync("node", [fp, ...args], {
+        cwd: ROOT,
+        encoding: "utf8",
+        env: { ...process.env, MAX_TICK: String(targetMaxTick) },
+      });
+
+      if (r.status === 0) return true;
     }
-  }catch(_){}
+  } catch {}
   return false;
 }
-// === /AUTO_WARM_CHAIN_CACHE_ON_STALE_V1 ===
 
-const { spawnSync } = require('child_process');
-/* OverGrid admin dev server (CJS) — stable, no patching */
-/* @DOC
-title: Dev Authority Server (/api/commit)
-inputs:
-- POST /api/commit {tick, frameId, commands[]}
-outputs:
-- dev_state/envelopes.dev.json append-only (local)
-guarantees:
-- rejects non-monotonic tick
-- rejects duplicate frameId
-- prevChainHash continuity enforced via chain cache
-@end */
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
-
-const ROOT = process.cwd();
-
-function readChainCache(){
-  try{
-    const raw = fs.readFileSync(path.join(ROOT,"dev_state","chain_cache.json"),"utf8");
-    return JSON.parse(raw);
-  }catch{ return null; }
-}
+// ===== minimal endpoints used by admin UI =====
 
 const PORT = Number(process.env.PORT || 5173);
+if (!fs.existsSync(DEV_STATE_DIR)) fs.mkdirSync(DEV_STATE_DIR, { recursive: true });
 
-const MIME = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".js": "application/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".pem": "text/plain; charset=utf-8",
-  ".md": "text/plain; charset=utf-8",
-  ".txt": "text/plain; charset=utf-8",
-};
-
-function send(res, status, body, contentType = "text/plain; charset=utf-8") {
-  res.writeHead(status, {
-    "content-type": contentType,
-    "cache-control": "no-store",
-    "access-control-allow-origin": "*",
-  });
-  res.end(body);
+function readFileJson(p) {
+  if (!fs.existsSync(p)) return null;
+  return safeJsonParse(fs.readFileSync(p, "utf8"));
 }
 
-function sendJSON(res, obj, status = 200) {
-  send(res, status, JSON.stringify(obj, null, 2), "application/json; charset=utf-8");
+function readLedger() { return readFileJson(path.join(ROOT, "ledger.json")); }
+function readInitial() { return readFileJson(path.join(ROOT, "initial.json")); }
+function readEnvelopes() { return readFileJson(path.join(ROOT, "envelopes.json")); }
+
+function readMergedEnvelopes() {
+  const base = readEnvelopes() || [];
+  let dev = [];
+  try {
+    if (fs.existsSync(DEV_ENVELOPES_AUTO)) dev = JSON.parse(fs.readFileSync(DEV_ENVELOPES_AUTO, "utf8")) || [];
+  } catch {}
+  return base.concat(dev);
 }
 
-function readJSONSafe(rel) {
-  const abs = path.join(ROOT, rel);
-  return JSON.parse(fs.readFileSync(abs, "utf8"));
+function kernelMeta() {
+  const cache = readChainCache();
+  return {
+    ok: true,
+    port: PORT,
+    repo: "overgrid-core",
+    chainCache: cache ? { maxTick: cache.maxTick, finalChainHash: cache.finalChainHash } : null,
+    devEnvelopes: fs.existsSync(DEV_ENVELOPES_AUTO)
+      ? { path: "dev_state/envelopes.dev.json", bytes: fs.statSync(DEV_ENVELOPES_AUTO).size }
+      : { path: "dev_state/envelopes.dev.json", exists: false },
+  };
 }
 
-function readMaybeJSON(rel) {
-  try { return readJSONSafe(rel); } catch { return null; }
-}
+const server = http.createServer(async (req, res) => {
+  const u = url.parse(req.url, true);
+  const method = (req.method || "GET").toUpperCase();
+  const p = u.pathname || "/";
 
-function asArray(x) {
-  if (!x) return [];
-  if (Array.isArray(x)) return x;
-  if (Array.isArray(x.data)) return x.data;
-  if (Array.isArray(x.envelopes)) return x.envelopes;
-  if (Array.isArray(x.frames)) return x.frames;
-  return [];
-}
+  if (method === "GET" && p === "/api/meta") return sendJSON(res, kernelMeta(), 200);
 
-function uniqByTick(arr) {
-  const m = new Map();
-  for (const it of arr) {
-    const t = Number(it && it.tick);
-    if (!Number.isFinite(t)) continue;
-    m.set(t, it); // last wins (dev overrides dist)
+  if (method === "GET" && p === "/api/ledger") return sendJSON(res, { ok: true, data: readLedger() }, 200);
+  if (method === "GET" && p === "/api/initial") return sendJSON(res, { ok: true, data: readInitial() }, 200);
+  if (method === "GET" && p === "/api/envelopes") return sendJSON(res, { ok: true, data: readEnvelopes() }, 200);
+  if (method === "GET" && p === "/api/envelopes_merged") return sendJSON(res, { ok: true, data: readMergedEnvelopes() }, 200);
+
+  if (method === "GET" && p === "/api/verify") {
+    const r = spawnSync("node", ["verifySignedBundle.js"], { cwd: ROOT, encoding: "utf8" });
+    if (r.status !== 0) return sendJSON(res, { ok: false, error: "VERIFY_FAILED", stderr: (r.stderr || "").slice(0, 4000) }, 500);
+    return sendJSON(res, { ok: true, stdout: (r.stdout || "").trim() }, 200);
   }
-  return [...m.entries()].sort((a,b)=>a[0]-b[0]).map(e=>e[1]);
-}
 
-function ensureDevStateFile() {
-  const dir = path.join(ROOT, "dev_state");
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const f = path.join(dir, "envelopes.dev.json");
-  if (!fs.existsSync(f)) fs.writeFileSync(f, "[]\n", "utf8");
-  return f;
-}
+  if (method === "POST" && p === "/api/commit") {
+    const body = await readBody(req);
+    const j = safeJsonParse(body);
+    if (!j || typeof j !== "object") return sendJSON(res, { ok: false, error: "BAD_JSON" }, 400);
 
-function serveStatic(req, res) {
-  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-  let rel = url.pathname;
-  if (rel === "/") rel = "/apps/admin/index.html";
-  rel = rel.replace(/^\/+/, "");
-  const abs = path.join(ROOT, rel);
+    const tick = Number(j.tick);
+    const frameId = Number(j.frameId);
+    const commands = Array.isArray(j.commands) ? j.commands : null;
 
-  if (!abs.startsWith(ROOT)) return send(res, 403, "forbidden");
-  fs.stat(abs, (stErr, st) => {
-    if (stErr) return send(res, 404, "not found");
-    if (st.isDirectory()) {
-      const idx = path.join(abs, "index.html");
-      return fs.readFile(idx, (e, d) => {
-        if (e) return send(res, 404, "not found");
-        send(res, 200, d, MIME[".html"]);
-      });
+    if (!Number.isFinite(tick) || !Number.isFinite(frameId) || !commands) {
+      return sendJSON(res, { ok: false, error: "BAD_PAYLOAD" }, 400);
     }
-    fs.readFile(abs, (e, d) => {
-      if (e) return send(res, 404, "not found");
-      const ext = path.extname(abs);
-      send(res, 200, d, MIME[ext] || "application/octet-stream");
-    });
-  });
-}
 
-const server = http.createServer((req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-  const pathname = url.pathname;
+    let cache = readChainCache();
+    if (!cache || !Number.isFinite(Number(cache.maxTick)) || !cache.finalChainHash) {
+      return sendJSON(res, { ok: false, error: "missing_chain_cache" }, 500);
+    }
 
-  // preflight
-  if (req.method === "OPTIONS") {
-    res.writeHead(204, {
-      "access-control-allow-origin": "*",
-      "access-control-allow-methods": "GET,POST,OPTIONS",
-      "access-control-allow-headers": "content-type",
-      "cache-control": "no-store",
-    });
-    return res.end();
-  }
-
-  // meta: dist envelopes + dev envelopes, and dist ledger
-  if (pathname === "/api/meta") {
-    const envDist = asArray(readMaybeJSON("dist_golden_bundle_v1/envelopes.json"));
-    const envDev  = asArray(readMaybeJSON("dev_state/envelopes.dev.json"));
-    const envMerged = uniqByTick(envDist.concat(envDev));
-    const envTicks = envMerged.map(x=>Number(x.tick)).filter(Number.isFinite);
-    const envMin = envTicks.length ? Math.min(...envTicks) : 0;
-    const envMax = envTicks.length ? Math.max(...envTicks) : 0;
-
-    const led = asArray(readMaybeJSON("dist_golden_bundle_v1/ledger.json"));
-    const ledTicks = led.map(x=>Number(x.tick)).filter(Number.isFinite);
-    const ledMin = ledTicks.length ? Math.min(...ledTicks) : 0;
-    const ledMax = ledTicks.length ? Math.max(...ledTicks) : 0;
-
-    return sendJSON(res, {
-      ok: true,
-      envelopes: { count: envMerged.length, minTick: envMin, maxTick: envMax },
-      ledger:    { count: led.length,      minTick: ledMin, maxTick: ledMax },
-    });
-  }
-
-  if (pathname === "/api/envelopes") {
-    const dist = asArray(readJSONSafe("dist_golden_bundle_v1/envelopes.json"));
-    return sendJSON(res, { ok: true, data: dist });
-  }
-
-  if (pathname === "/api/envelopes_merged") {
-    const dist = asArray(readMaybeJSON("dist_golden_bundle_v1/envelopes.json"));
-    const dev  = asArray(readMaybeJSON("dev_state/envelopes.dev.json"));
-    const merged = uniqByTick(dist.concat(dev));
-    return sendJSON(res, { ok: true, data: merged });
-  }
-
-  if (pathname === "/api/ledger") {
-    const dist = asArray(readJSONSafe("dist_golden_bundle_v1/ledger.json"));
-    return sendJSON(res, { ok: true, data: dist });
-  }
-
-  if (pathname === "/api/initial") {
-    const j = readJSONSafe("dist_golden_bundle_v1/initial.json");
-    return sendJSON(res, { ok: true, data: j });
-  }
-
-  
-  // dev commit → append to dev_state/envelopes.dev.json
-  if (pathname === "/api/commit" && req.method === "POST") {
-    const f = ensureDevStateFile();
-    let body = "";
-    req.on("data", d => body += d);
-    req.on("end", () => {
-      let payload;
-      try { payload = JSON.parse(body || "{}"); }
-      catch { return sendJSON(res, { ok:false, error:"bad json" }, 400); }
-
-      const tick = Number(payload.tick);
-      const frameId = Number(payload.frameId ?? payload.tick);
-      const commands = Array.isArray(payload.commands) ? payload.commands : [];
-
-      if (!Number.isFinite(tick) || tick < 0)
-        return sendJSON(res, { ok:false, error:"bad tick" }, 400);
-
-      if (!Number.isFinite(frameId) || frameId < 0)
-        return sendJSON(res, { ok:false, error:"bad frameId" }, 400);
-
-      if (!commands.length)
-        return sendJSON(res, { ok:false, error:"no commands" }, 400);
-
-      let arr = [];
-      try { arr = JSON.parse(fs.readFileSync(f, "utf8")); } catch {}
-      if (!Array.isArray(arr)) arr = [];
-
-      const lastTick = arr.length ? Number(arr[arr.length-1].tick) : -1;
-
-      if (tick <= lastTick)
-        return sendJSON(res, { ok:false, error:"non_monotonic_tick", lastTick }, 400);
-
-      if (arr.some(e => Number(e.frameId) === frameId))
-        return sendJSON(res, { ok:false, error:"duplicate_frameId" }, 400);
-
-      const cache = readChainCache();
-      if(!cache || !Number.isFinite(Number(cache.maxTick)) || !cache.finalChainHash)
-        return sendJSON(res,{ok:false,error:"missing_chain_cache"},500);
-
-      
-      if (Number(cache.maxTick) !== (tick - 1)) {
-        // attempt warm/rebuild once
-        __tryWarmChainCacheOnce(tick - 1);
-        const cache2 = readChainCache();
-        if(!cache2 || !Number.isFinite(Number(cache2.maxTick)) || !cache2.finalChainHash)
-          return sendJSON(res,{ok:false,error:"missing_chain_cache"},500);
-        if (Number(cache2.maxTick) !== (tick - 1))
-          return sendJSON(res,{ok:false,error:"stale_chain_cache", cacheMaxTick: cache2.maxTick, need: tick-1},400);
-
-        // replace cache with warmed cache
-        // (use warmed values below)
-        // NOTE: we keep 'cache' name by shadowing via assignment
-        // eslint-disable-next-line no-func-assign
-        cache.maxTick = cache2.maxTick;
-        cache.finalChainHash = cache2.finalChainHash;
+    if (Number(cache.maxTick) !== (tick - 1)) {
+      tryWarmChainCacheOnce(tick - 1);
+      const cache2 = readChainCache();
+      if (!cache2 || !Number.isFinite(Number(cache2.maxTick)) || !cache2.finalChainHash) {
+        return sendJSON(res, { ok: false, error: "missing_chain_cache" }, 500);
       }
+      if (Number(cache2.maxTick) !== (tick - 1)) {
+        return sendJSON(res, { ok: false, error: "stale_chain_cache", cacheMaxTick: cache2.maxTick, need: tick - 1 }, 400);
+      }
+      cache = cache2;
+    }
 
+    const prevChainHash = String(cache.finalChainHash);
+    const appended = { tick, frameId, prevChainHash, commands };
 
-      const prevChainHash = String(cache.finalChainHash);
-      const appended = { tick, frameId, prevChainHash, commands };
-      arr.push(appended);
-      fs.writeFileSync(f, JSON.stringify(arr, null, 2) + "\n", "utf8");
+    let arr = [];
+    try {
+      if (fs.existsSync(DEV_ENVELOPES_AUTO)) arr = JSON.parse(fs.readFileSync(DEV_ENVELOPES_AUTO, "utf8")) || [];
+      if (!Array.isArray(arr)) arr = [];
+    } catch { arr = []; }
 
-      return sendJSON(res, { ok:true, appended, total: arr.length });
-    });
-    return;
+    const lastTick = arr.length ? Number(arr[arr.length - 1].tick) : null;
+    if (Number.isFinite(lastTick) && tick <= lastTick) {
+      return sendJSON(res, { ok: false, error: "NON_MONOTONIC_TICK", lastTick, got: tick }, 400);
+    }
+
+    arr.push(appended);
+    fs.writeFileSync(DEV_ENVELOPES_AUTO, JSON.stringify(arr, null, 2));
+
+    // refresh chain cache (best-effort) so next commit is smooth
+    tryWarmChainCacheOnce(tick);
+
+    return sendJSON(res, { ok: true, appended }, 200);
   }
 
-
-  // verify (runs bundle verify script)
-  if (pathname === "/api/verify") {
-    const r = spawnSync("bash", ["scripts/ci_verify_bundle_v1.sh"], { cwd: ROOT, encoding: "utf8" });
-    const out = (r.stdout || "") + (r.stderr ? "\n" + r.stderr : "");
-    return sendJSON(res, { ok: r.status === 0, exitCode: r.status, output: out });
-  }
-
-  // static
-  return serveStatic(req, res);
+  return sendJSON(res, { ok: false, error: "NOT_FOUND", path: p }, 404);
 });
 
-server.listen(PORT, () => {
-  console.log(`http://localhost:${PORT}/apps/admin/`);
-  console.log(`http://localhost:${PORT}/api/meta`);
-  console.log(`http://localhost:${PORT}/api/verify`);
-  console.log(`http://localhost:${PORT}/api/envelopes`);
-  console.log(`http://localhost:${PORT}/api/envelopes_merged`);
-  console.log(`http://localhost:${PORT}/api/ledger`);
-  console.log(`http://localhost:${PORT}/api/initial`);
-  console.log(`http://localhost:${PORT}/api/commit`);
+server.listen(PORT, "127.0.0.1", () => {
+  console.log(`OK_DEV_ADMIN_SERVER port=${PORT}`);
 });
