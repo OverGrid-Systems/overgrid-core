@@ -1,6 +1,6 @@
 
 function __jsonGET(url){
-  return fetch(url,{cache:"no-store"}).then(async r=>{
+  return fetch(__api(url),{cache:"no-store"}).then(async r=>{
     const t = await r.text();
     let j;
     try{ j = JSON.parse(t); } catch(e){ throw new Error("BAD_JSON "+url+" :: "+t.slice(0,200)); }
@@ -43,13 +43,21 @@ window.addEventListener("unhandledrejection", (e)=>{
    - Renders entities on canvas, shows proof for tick.
 */
 
+
+// === OG PREFIX PATCH (auto) ===
+const __API_PREFIX__ = (typeof location!=="undefined" && location.pathname.startsWith("/og/")) ? "/og" : "";
+function __api(url){
+  return (typeof url==="string" && url.startsWith("/api/")) ? (__API_PREFIX__ + url) : url;
+}
+// === /OG PREFIX PATCH ===
+
 const $ = (id)=>document.getElementById(id);
 
 function safeSet(id, txt){ const el=$(id); if(el) el.textContent = String(txt); }
 function show(el, on){ if(el) el.style.display = on ? "" : "none"; }
 
 async function getJSON(url){
-  const r = await fetch(url, { cache: "no-store" });
+  const r = await fetch(__api(url), { cache: "no-store" });
   const j = await r.json();
   if(!j || j.ok !== true) throw new Error((j && j.error) ? j.error : ("bad response: " + url));
   return j.data ?? j;
@@ -301,7 +309,7 @@ document.addEventListener("DOMContentLoaded", ()=>{ init().catch(e=>{ safeSet("b
   function asArr(j){ return Array.isArray(j) ? j : (j && Array.isArray(j.data) ? j.data : []); }
 
   async function jsonGET(url){
-    const r = await fetch(url,{cache:"no-store"});
+    const r = await fetch(__api(url),{cache:"no-store"});
     const t = await r.text();
     let j;
     try{ j = JSON.parse(t); }catch(e){ throw new Error("BAD_JSON "+url+" :: "+t.slice(0,200)); }
@@ -335,7 +343,7 @@ document.addEventListener("DOMContentLoaded", ()=>{ init().catch(e=>{ safeSet("b
   async function sendCmdOverride(payload){
     const out = $("out-cmd");
     if(out) out.textContent="(sending...)";
-    const r = await fetch("/api/commit",{
+    const r = await fetch(__api("/api/commit"),{
       method:"POST",
       headers:{ "content-type":"application/json" },
       body: JSON.stringify(payload)
@@ -393,7 +401,7 @@ document.addEventListener("DOMContentLoaded", ()=>{ init().catch(e=>{ safeSet("b
   const setText = (id, v)=>{ const el=$(id); if(el) el.textContent = String(v); };
 
   async function jget(url){
-    const r = await fetch(url, { cache:"no-store" });
+    const r = await fetch(__api(url), { cache:"no-store" });
     const t = await r.text();
     let j;
     try { j = JSON.parse(t); } catch(e){ throw new Error("JSON parse failed for "+url+": "+t.slice(0,180)); }

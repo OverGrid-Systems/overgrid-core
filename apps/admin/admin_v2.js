@@ -1,11 +1,19 @@
 (() => {
-  const $ = (id) => document.getElementById(id);
+  
+// === OG PREFIX PATCH (auto) ===
+const __API_PREFIX__ = (typeof location!=="undefined" && location.pathname.startsWith("/og/")) ? "/og" : "";
+function __api(url){
+  return (typeof url==="string" && url.startsWith("/api/")) ? (__API_PREFIX__ + url) : url;
+}
+// === /OG PREFIX PATCH ===
+
+const $ = (id) => document.getElementById(id);
   const $any = (...ids) => ids.map($).find(Boolean) || null;
 
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   async function jget(url) {
-    const r = await fetch(url, { cache: "no-store" });
+    const r = await fetch(__api(url), { cache: "no-store" });
     const t = await r.text();
     try { return JSON.parse(t); }
     catch { throw new Error("JSON parse failed " + url + " :: " + t.slice(0, 200)); }
@@ -100,7 +108,7 @@
   async function sendCmd(payload) {
     const out = $any("out-cmd");
     if (out) out.textContent = "(sending...)";
-    const r = await fetch("/api/commit", {
+    const r = await fetch(__api("/api/commit"), {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload)
