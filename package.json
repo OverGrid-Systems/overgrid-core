@@ -16,8 +16,11 @@
     "ci:golden:v0": "bash scripts/ci_verify_golden_hashes_v0.sh",
     "contract:hash:v0:gen": "node scripts/gen_contract_hash_v0.cjs",
     "ci:contract:hash:v0": "bash scripts/ci_verify_contract_hash_v0.sh",
-    "start": "node scripts/dev_admin_server.cjs"
+    "start": "node server.js"
   },
   "keywords": [],
-  "author": ""
+  "author": "",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }
