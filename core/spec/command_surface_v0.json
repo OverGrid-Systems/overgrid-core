@@ -1,0 +1,65 @@
+{
+  "version": "command_surface_v0",
+  "commands": [
+    {
+      "id": "VERIFY_KERNEL",
+      "category": "verification",
+      "riskLevel": "low",
+      "requiresApproval": false,
+      "requiresIdentityMatch": true,
+      "executionTarget": "kernel",
+      "route": "/api/verify",
+      "method": "GET"
+    },
+    {
+      "id": "LOAD_META",
+      "category": "introspection",
+      "riskLevel": "low",
+      "requiresApproval": false,
+      "requiresIdentityMatch": true,
+      "executionTarget": "kernel",
+      "route": "/api/meta",
+      "method": "GET"
+    },
+    {
+      "id": "RUN_SIM_LIGHT",
+      "category": "simulation",
+      "riskLevel": "medium",
+      "requiresApproval": true,
+      "requiresIdentityMatch": true,
+      "executionTarget": "kernel",
+      "route": "/api/commit",
+      "method": "POST"
+    },
+    {
+      "id": "RUN_SIM_HEAVY",
+      "category": "simulation",
+      "riskLevel": "high",
+      "requiresApproval": true,
+      "requiresIdentityMatch": true,
+      "executionTarget": "kernel",
+      "route": "/api/commit",
+      "method": "POST"
+    },
+    {
+      "id": "APPLY_DRAFT",
+      "category": "governance",
+      "riskLevel": "high",
+      "requiresApproval": true,
+      "requiresIdentityMatch": true,
+      "executionTarget": "control-plane",
+      "route": "/api/commit",
+      "method": "POST"
+    },
+    {
+      "id": "REPLAY_CHECK",
+      "category": "verification",
+      "riskLevel": "medium",
+      "requiresApproval": false,
+      "requiresIdentityMatch": true,
+      "executionTarget": "kernel",
+      "route": "/api/verify",
+      "method": "GET"
+    }
+  ]
+}

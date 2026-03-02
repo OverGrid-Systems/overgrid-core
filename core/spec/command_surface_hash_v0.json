@@ -1,0 +1,7 @@
+{
+  "version": "command_surface_hash_v0",
+  "inputs": [
+    "core/spec/command_surface_v0.json"
+  ],
+  "expectedSha256": "b6b2b553aaa84713782fefc0e1cfdcfd1be898c693fafe895b3c9135a609ff99"
+}
