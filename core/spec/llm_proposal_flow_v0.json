@@ -1,0 +1,63 @@
+{
+  "version": "llm_proposal_flow_v0",
+  "description": "Draft → Decision → Apply sovereign flow between Operator and Core",
+
+  "entities": {
+    "proposal": {
+      "required": [
+        "id",
+        "createdAt",
+        "intent",
+        "target",
+        "proposal",
+        "constraints",
+        "provenance"
+      ],
+      "constraints": {
+        "deterministic": true,
+        "draftOnly": true,
+        "requiresHumanApproval": true
+      }
+    },
+
+    "decision": {
+      "required": [
+        "proposalId",
+        "decisionType",
+        "decidedAt",
+        "decider",
+        "hashOfProposal"
+      ],
+      "allowedDecisionTypes": [
+        "APPROVE",
+        "REJECT",
+        "ROLLBACK"
+      ]
+    },
+
+    "apply": {
+      "required": [
+        "proposalId",
+        "decisionId",
+        "kernelVersion",
+        "preApplyChainHash",
+        "postApplyChainHash"
+      ]
+    }
+  },
+
+  "stateMachine": {
+    "DRAFT": ["PROPOSED"],
+    "PROPOSED": ["APPROVED", "REJECTED"],
+    "APPROVED": ["APPLIED"],
+    "REJECTED": [],
+    "APPLIED": ["ROLLED_BACK"]
+  },
+
+  "invariants": [
+    "No proposal may reach APPLIED without an APPROVE decision.",
+    "Kernel must verify hashOfProposal before apply.",
+    "All state transitions must be append-only and auditable.",
+    "No LLM output may bypass human approval."
+  ]
+}
